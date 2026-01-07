@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>t.uni</groupId>
+        <artifactId>T-Uni-Java</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>t-uni-server</artifactId>
+    <packaging>pom</packaging>
+    <name>T-Uni-Server</name>
+    <description>微信小程序后端聚合模块</description>
+
+    <modules>
+        <module>server-common</module>
+        <module>server-domain</module>
+        <module>server-core-common</module>
+        <module>server-services</module>
+        <module>server-api</module>
+    </modules>
+
+    <dependencies>
+        <!-- WxJava 微信小程序SDK -->
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-miniapp</artifactId>
+            <version>4.8.0</version>
+        </dependency>
+
+        <!-- WxJava 微信支付SDK -->
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-pay</artifactId>
+            <version>4.8.0</version>
+        </dependency>
+    </dependencies>
+
+</project>

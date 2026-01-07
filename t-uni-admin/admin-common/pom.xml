@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>t.uni</groupId>
+        <artifactId>t-uni-admin</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>admin-common</artifactId>
+    <packaging>jar</packaging>
+    <name>Admin Common</name>
+    <description>Admin专属通用模块</description>
+
+    <dependencies>
+        <!-- 依赖顶层common模块 -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>common-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>common-web</artifactId>
+        </dependency>
+    </dependencies>
+</project>

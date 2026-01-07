@@ -1,0 +1,28 @@
+wx:
+  miniapp:
+    # 微信小程序AppID
+    appid: ${WX_MINIAPP_APPID:your_appid_here}
+    # 微信小程序AppSecret（建议通过环境变量注入）
+    secret: ${WX_MINIAPP_SECRET:}
+    # Token（用于消息加解密，可选）
+    token: ${WX_MINIAPP_TOKEN:}
+    # EncodingAESKey（用于消息加解密，可选）
+    aesKey: ${WX_MINIAPP_AES_KEY:}
+    # 消息格式，JSON或XML
+    msgDataFormat: JSON
+
+  pay:
+    # 微信支付AppID（与小程序AppID相同）
+    appId: ${WX_PAY_APPID:your_appid_here}
+    # 商户号
+    mchId: ${WX_PAY_MCH_ID:your_mch_id_here}
+    # 商户密钥（API v2）
+    mchKey: ${WX_PAY_MCH_KEY:your_mch_key_here}
+    # API v3密钥
+    apiV3Key: ${WX_PAY_API_V3_KEY:your_api_v3_key_here}
+    # 证书路径（用于退款等操作）
+    certPath: ${WX_PAY_CERT_PATH:classpath:cert/apiclient_cert.p12}
+    # 支付回调通知URL
+    notifyUrl: ${WX_PAY_NOTIFY_URL:https://your-domain.com/api/payment/notify}
+    # 退款回调通知URL
+    refundNotifyUrl: ${WX_PAY_REFUND_NOTIFY_URL:https://your-domain.com/api/payment/refund-notify}

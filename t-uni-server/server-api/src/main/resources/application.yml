@@ -1,0 +1,67 @@
+server:
+  port: 7850
+  tomcat:
+    threads:
+      max: 1000
+
+spring:
+  profiles:
+    active: @profiles.active@
+    include:
+      - wx  # 引入微信配置
+  application:
+    name: t-uni-server
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+      resolve-lazily: true
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${t.uni.master.host}:${t.uni.master.port}/${t.uni.master.database}?serverTimezone=GMT%2B8&useSSL=false&characterEncoding=utf-8&allowPublicKeyRetrieval=true
+    username: ${t.uni.master.username}
+    password: ${t.uni.master.password}
+  data:
+    redis:
+      host: ${t.uni.redis.host}
+      port: ${t.uni.redis.port}
+      database: ${t.uni.redis.database}
+      password: ${t.uni.redis.password}
+      lettuce:
+        pool:
+          max-active: 20
+          max-wait: -1
+          max-idle: 5
+          min-idle: 0
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*.xml
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: /api/actuator
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always

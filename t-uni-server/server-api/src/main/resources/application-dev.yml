@@ -1,0 +1,26 @@
+server:
+  port: 7850
+
+logging:
+  level:
+    t.uni.server: info
+    root: info
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: "logs/${spring.application.name}"
+    name: "logs/${spring.application.name}"
+
+t.uni:
+  master:
+    host: localhost
+    port: 3306
+    database: t_uni
+    username: root
+    password: 123456
+
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    password:

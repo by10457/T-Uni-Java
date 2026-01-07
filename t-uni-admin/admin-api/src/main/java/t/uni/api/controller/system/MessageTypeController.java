@@ -1,0 +1,80 @@
+package t.uni.api.controller.system;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import t.uni.common.core.result.PageResult;
+import t.uni.common.core.result.Result;
+import t.uni.common.core.result.ResultCodeEnum;
+import t.uni.core.annotation.PermissionTag;
+import t.uni.domain.common.ValidationGroups;
+import t.uni.domain.system.dto.MessageTypeDto;
+import t.uni.domain.system.entity.MessageType;
+import t.uni.domain.system.vo.MessageTypeVo;
+import t.uni.system.service.MessageTypeService;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 系统消息类型 前端控制器
+ * </p>
+ *
+ * @since 2024-10-30 13:19:33
+ */
+@Tag(name = "消息类型", description = "系统消息类型相关接口")
+@PermissionTag(permission = "messageType:*")
+@RestController
+@RequestMapping("api/messageType")
+public class MessageTypeController {
+
+    @Resource
+    private MessageTypeService messageTypeService;
+
+    @Operation(summary = "分页查询消息类型", description = "分页查询系统消息类型")
+    @PermissionTag(permission = "messageType:query")
+    @GetMapping("{page}/{limit}")
+    public Result<PageResult<MessageTypeVo>> getMessageTypePage(
+            @PathVariable @Parameter(name = "page", description = "当前页", required = true) Integer page,
+            @PathVariable @Parameter(name = "limit", description = "每页记录数", required = true) Integer limit,
+            MessageTypeDto dto) {
+        Page<MessageType> pageParams = new Page<>(page, limit);
+        PageResult<MessageTypeVo> pageResult = messageTypeService.getMessageTypePage(pageParams, dto);
+        return Result.success(pageResult);
+    }
+
+    @Operation(summary = "添加消息类型", description = "添加系统消息类型")
+    @PermissionTag(permission = "messageType:add")
+    @PostMapping()
+    public Result<String> createMessageType(@Validated(ValidationGroups.Add.class) @RequestBody MessageTypeDto dto) {
+        messageTypeService.createMessageType(dto);
+        return Result.success(ResultCodeEnum.CREATE_SUCCESS);
+    }
+
+    @Operation(summary = "更新消息类型", description = "更新系统消息类型")
+    @PermissionTag(permission = "messageType:update")
+    @PutMapping()
+    public Result<String> updateMessageType(@Validated(ValidationGroups.Update.class) @RequestBody MessageTypeDto dto) {
+        messageTypeService.updateMessageType(dto);
+        return Result.success(ResultCodeEnum.UPDATE_SUCCESS);
+    }
+
+    @Operation(summary = "删除消息类型", description = "删除系统消息类型")
+    @PermissionTag(permission = "messageType:delete")
+    @DeleteMapping()
+    public Result<String> deleteMessageType(@RequestBody List<Long> ids) {
+        messageTypeService.deleteMessageType(ids);
+        return Result.success(ResultCodeEnum.DELETE_SUCCESS);
+    }
+
+    @Operation(summary = "所有消息列表", description = "获取所有消息列表")
+    @GetMapping("private/messages")
+    public Result<List<MessageTypeVo>> getMessageList() {
+        List<MessageTypeVo> voList = messageTypeService.getMessageList();
+        return Result.success(voList);
+    }
+}

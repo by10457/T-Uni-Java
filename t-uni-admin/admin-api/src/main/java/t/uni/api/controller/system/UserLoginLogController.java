@@ -1,0 +1,66 @@
+package t.uni.api.controller.system;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import org.springframework.web.bind.annotation.*;
+import t.uni.common.core.result.PageResult;
+import t.uni.common.core.result.Result;
+import t.uni.common.core.result.ResultCodeEnum;
+import t.uni.core.annotation.PermissionTag;
+import t.uni.domain.system.dto.user.UserLoginLogDto;
+import t.uni.domain.system.entity.UserLoginLog;
+import t.uni.domain.system.vo.user.UserLoginLogLocalVo;
+import t.uni.domain.system.vo.user.UserLoginLogVo;
+import t.uni.system.service.UserLoginLogService;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 用户登录日志 前端控制器
+ * </p>
+ *
+ * @since 2024-10-19 01:01:01
+ */
+@Tag(name = "用户登录日志", description = "用户登录日志相关接口")
+@PermissionTag(permission = "userLoginLog:*")
+@RestController
+@RequestMapping("api/user-login-log")
+public class UserLoginLogController {
+
+    @Resource
+    private UserLoginLogService userLoginLogService;
+
+    @Operation(summary = "分页查询用户登录日志", description = "分页查询用户登录日志")
+    @PermissionTag(permission = "userLoginLog:query")
+    @GetMapping("{page}/{limit}")
+    public Result<PageResult<UserLoginLogVo>> getUserLoginLogPage(
+            @PathVariable @Parameter(name = "page", description = "当前页", required = true) Integer page,
+            @PathVariable @Parameter(name = "limit", description = "每页记录数", required = true) Integer limit,
+            UserLoginLogDto dto) {
+        Page<UserLoginLog> pageParams = new Page<>(page, limit);
+        PageResult<UserLoginLogVo> pageResult = userLoginLogService.getUserLoginLogPage(pageParams, dto);
+        return Result.success(pageResult);
+    }
+
+    @Operation(summary = "删除用户登录日志", description = "删除用户登录日志")
+    @PermissionTag(permission = "userLoginLog:delete")
+    @DeleteMapping()
+    public Result<Object> deleteUserLoginLog(@RequestBody List<Long> ids) {
+        userLoginLogService.deleteUserLoginLog(ids);
+        return Result.success(ResultCodeEnum.DELETE_SUCCESS);
+    }
+
+    @Operation(summary = "分页查询当前用户登录日志", description = "分页查询本地用户登录日志")
+    @GetMapping("private/{page}/{limit}")
+    public Result<PageResult<UserLoginLogLocalVo>> getUserLoginLogPageByUser(
+            @Parameter(name = "page", description = "当前页", required = true) @PathVariable("page") Integer page,
+            @Parameter(name = "limit", description = "每页记录数", required = true) @PathVariable("limit") Integer limit) {
+        Page<UserLoginLog> pageParams = new Page<>(page, limit);
+        PageResult<UserLoginLogLocalVo> voPageResult = userLoginLogService.getUserLoginLogPageByUser(pageParams);
+        return Result.success(voPageResult);
+    }
+}

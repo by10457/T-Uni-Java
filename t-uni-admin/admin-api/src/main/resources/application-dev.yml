@@ -1,0 +1,47 @@
+server:
+  port: 7840
+
+logging:
+  level:
+    t.uni.service.mapper: info
+    t.uni.service.controller: info
+    t.uni.service.service: info
+    root: info
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: "logs/${spring.application.name}"
+    name: "logs/${spring.application.name}"
+
+# mybatis-plus:
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 查看日志
+
+t.uni:
+  master:
+    host: localhost
+    port: 3306
+    database: t_uni
+    username: root
+    password: 123456
+
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+
+dromara:
+  local-plus:
+    # 访问域名，例如：“http://127.0.0.1:8030/{path-patterns}”，注意后面要和 path-patterns 名字一样
+    domain: /api/local-file
+    # 访问路径，使用本地在SpringSecurity中要配置权限，如果是和我一样就不用修改了，如果不是api开头，上线需要配置nginx
+    path-patterns: /api/local-file/**
+    storage-path: D:/Temp/ # 存储路径
+    # storage-path: ~/t-uni-admin/temp # 存储路径
+    base-path: "" # 基础路径
+  minio:
+    endpointUrl: "http://192.168.3.137:9000" # 连接地址
+    accessKey: uni # 用户名
+    secretKey: "12345678" # 登录密码
+    bucket-name: auth-admin # 指定哪个桶
+    base-path: "" # 基础路径
