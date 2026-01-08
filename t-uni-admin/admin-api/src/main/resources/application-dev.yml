@@ -19,16 +19,16 @@ logging:
 
 t.uni:
   master:
-    host: localhost
+    host: 192.168.2.111
     port: 3306
-    database: t_uni
+    database: wxy
     username: root
-    password: 123456
+    password: zxxyp
 
   redis:
-    host: localhost
+    host: 192.168.2.111
     port: 6379
-    database: 0
+    database: zxxyp
 
   jwt:
     # JWT 密钥（至少256位/32字节，用于HMAC-SHA算法）

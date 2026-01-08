@@ -26,10 +26,6 @@
             <groupId>t.uni</groupId>
             <artifactId>common-config</artifactId>
         </dependency>
-        <dependency>
-            <groupId>t.uni</groupId>
-            <artifactId>common-web</artifactId>
-        </dependency>
 
         <!-- Server Domain -->
         <dependency>

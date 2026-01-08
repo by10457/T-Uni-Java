@@ -17,8 +17,9 @@
     <description>Admin业务服务模块</description>
 
     <modules>
-        <module>system</module>
-        <module>schedule</module>
+        <module>admin-system</module>
+        <module>admin-schedule</module>
+        <module>admin-configuration</module>
     </modules>
 
     <dependencies>

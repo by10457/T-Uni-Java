@@ -2,6 +2,6 @@
 .vscode
 # 排除所有 .class 文件
 *.class
-
+**/.codex/
 # 如果你使用了 Maven，排除整个 target 目录
 target/

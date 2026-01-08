@@ -17,7 +17,7 @@
 **关键决策**：
 
 - 复用 `social_user` 表（不新建 `social_user_wx`）
-- 通过**主键 id** 关联 `core_user` 和 `social_user`（使用 MyBatis-Plus UUID 生成）
+- 通过**主键 id** 关联 `core_user` 和 `social_user`（使用 MyBatis-Plus ASSIGN_ID 生成）
 - 移除 Spring Security 依赖，使用自定义拦截器 + JWT
 - `isNewUser` 判定：`core_user.create_time` 与当前时间差 ≤ 2分钟
 
@@ -29,7 +29,7 @@
 ┌─────────────────┐       id        ┌─────────────────┐
 │   core_user     │◄───────────────►│   social_user   │
 │  (核心用户表)    │    (主键关联)    │  (社交用户表)    │
-│  id (UUID)      │                 │  id (UUID)      │
+│  id (ASSIGN_ID)      │                 │  id (ASSIGN_ID)      │
 └─────────────────┘                 └─────────────────┘
         │
         │ 加权随机分配
@@ -54,12 +54,12 @@
 wx:auth:refresh:{id}  -> refreshToken (TTL: 7天)
 ```
 
-### 2.4 MyBatis-Plus UUID 配置
+### 2.4 MyBatis-Plus ASSIGN_ID 配置
 
 ```java
 // 在 CoreUser 和 SocialUser 实体中配置
-@TableId(type = IdType.ASSIGN_UUID)
-private String id;
+@TableId(type = IdType.ASSIGN_ID)
+private Long id;
 ```
 
 ## 三、API 接口设计（RPC 风格）
@@ -67,7 +67,7 @@ private String id;
 ### 3.1 登录接口
 
 ```
-POST /wx/auth/login
+POST /api/wx/auth/login
 Request:  { "code": "微信登录code" }
 Response: {
     "accessToken": "jwt...",
@@ -80,7 +80,7 @@ Response: {
 ### 3.2 Token 刷新接口
 
 ```
-POST /wx/auth/refreshToken
+POST /api/wx/auth/refreshToken
 Request:  { "refreshToken": "uuid..." }
 Response: {
     "accessToken": "新jwt...",
@@ -93,7 +93,7 @@ Response: {
 ### 3.3 用户信息接口
 
 ```
-POST /wx/user/getUserInfo
+POST /api/wx/user/getUserInfo
 Header: Authorization: Bearer {accessToken}
 Response: {
     "userId": 123,
@@ -110,8 +110,8 @@ Response: {
 ### 4.1 表结构说明
 
 - `core_user` 和 `social_user` 表使用现有结构，无需修改
-- 两表的主键 `id` 字段将通过 MyBatis-Plus 的 `@TableId(type = IdType.ASSIGN_UUID)` 自动生成 UUID
-- 登录时，core_user 和 social_user 使用相同的 UUID 作为主键，实现一对一关联
+- 两表的主键 `id` 字段将通过 MyBatis-Plus 的 `@TableId(type = IdType.ASSIGN_ID)` 自动生成 Long 主键
+- 登录时，core_user 和 social_user 使用相同的 Long 主键（ASSIGN_ID），实现一对一关联
 
 ## 五、文件清单
 
@@ -121,8 +121,8 @@ Response: {
 
 | 文件                                    | 说明                    |
 |---------------------------------------|-----------------------|
-| `entity/CoreUser.java`                | 核心用户实体（@TableId UUID） |
-| `entity/SocialUser.java`              | 社交用户实体（@TableId UUID） |
+| `entity/CoreUser.java`                | 核心用户实体（@TableId ASSIGN_ID） |
+| `entity/SocialUser.java`              | 社交用户实体（@TableId ASSIGN_ID） |
 | `entity/CoreUserDefaultAvatar.java`   | 默认头像实体                |
 | `entity/CoreUserDefaultNickName.java` | 默认昵称实体                |
 | `dto/auth/RefreshTokenDTO.java`       | Token刷新请求             |
@@ -181,7 +181,7 @@ Response: {
 
 ### 阶段二：实体和数据访问层
 
-3. 创建 Entity：`CoreUser`、`SocialUser`（配置 `@TableId(type = IdType.ASSIGN_UUID)`）
+3. 创建 Entity：`CoreUser`、`SocialUser`（配置 `@TableId(type = IdType.ASSIGN_ID)`）
 4. 创建 Entity：`CoreUserDefaultAvatar`、`CoreUserDefaultNickName`
 5. 创建 Mapper：4个 Mapper 接口
 6. 创建 `WeightedRandomSelector.java` 加权随机工具
@@ -213,10 +213,10 @@ Response: {
 2. 调用 wxMaService.getUserService().getSessionInfo(code)
 3. 查询 social_user (by ma_open_id)
 4. 用户不存在:
-   - 生成 UUID 作为主键 id（MyBatis-Plus 自动生成）
+   - 生成 Long 主键 id（ASSIGN_ID，MyBatis-Plus 自动生成）
    - 从默认池加权随机获取头像和昵称
-   - 创建 core_user 记录（id = UUID）
-   - 创建 social_user 记录（id = 相同的 UUID）
+   - 创建 core_user 记录（id = Long 主键）
+   - 创建 social_user 记录（id = 相同的 Long 主键）
 5. 用户存在:
    - 查询对应的 core_user（通过 social_user.id）
 6. 生成双 Token (access + refresh)
@@ -264,3 +264,5 @@ var isNewUser = ChronoUnit.MINUTES.between(
 - `init_sql/social_user.sql`
 - `init_sql/core_user_default_avatar.sql`
 - `init_sql/core_user_default_nick_name.sql`
+
+
