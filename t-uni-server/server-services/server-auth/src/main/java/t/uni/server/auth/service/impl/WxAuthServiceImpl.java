@@ -3,7 +3,6 @@ package t.uni.server.auth.service.impl;
 import cn.binarywang.wx.miniapp.api.WxMaService;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
@@ -212,7 +211,8 @@ public class WxAuthServiceImpl implements WxAuthService {
     private String getLoginIdentifier(String openId, String unionId) {
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
             if (StrUtil.isBlank(unionId)) {
-                throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(), "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
+                throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(),
+                        "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
             }
             log.info("使用 unionId 作为登录标识: {}", unionId);
             return unionId;
@@ -227,13 +227,13 @@ public class WxAuthServiceImpl implements WxAuthService {
      * @param loginIdentifier 登录标识（openId 或 unionId）
      * @return 业务用户，不存在则返回 null
      */
-    @SuppressWarnings("unchecked")
     private IBusinessUser queryBusinessUser(String loginIdentifier) {
-        IBusinessUserMapper<IBusinessUser> mapper = (IBusinessUserMapper<IBusinessUser>) businessUserMapper;
+        // 使用 IBusinessUserMapper 接口定义的查询方法
+        // 这些方法在具体 Mapper（如 SocialUserMapper）中执行时，泛型 T 会被替换为实际实体类
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
-            return mapper.selectOne(Wrappers.lambdaQuery(IBusinessUser.class).eq(IBusinessUser::getUnionId, loginIdentifier));
+            return businessUserMapper.findByUnionId(loginIdentifier);
         } else {
-            return mapper.selectOne(Wrappers.lambdaQuery(IBusinessUser.class).eq(IBusinessUser::getMaOpenId, loginIdentifier));
+            return businessUserMapper.findByMaOpenId(loginIdentifier);
         }
     }
 }

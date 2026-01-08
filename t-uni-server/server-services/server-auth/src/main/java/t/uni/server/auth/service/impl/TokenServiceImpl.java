@@ -39,11 +39,11 @@ public class TokenServiceImpl implements TokenService {
         claims.put(AuthConstant.CLAIM_OPEN_ID, openId);
 
         var accessTokenExpireTime = LocalDateTime.now().plusHours(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
-        var accessToken = ServerJwtTokenUtil.createTokenWithMap(claims, Date.from(accessTokenExpireTime.atZone(ZoneId.systemDefault()).toInstant()));
+        var accessToken = ServerJwtTokenUtil.createTokenWithMap(claims,
+                Date.from(accessTokenExpireTime.atZone(ZoneId.systemDefault()).toInstant()));
 
         // 2. 生成 Refresh Token（UUID）
         var refreshToken = UUID.randomUUID().toString().replace("-", "");
-        var refreshTokenExpireTime = LocalDateTime.now().plusDays(AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS);
 
         // 3. 存储 Refresh Token 到 Redis
         var redisKey = AuthConstant.REDIS_KEY_REFRESH_TOKEN + userId;
@@ -59,7 +59,16 @@ public class TokenServiceImpl implements TokenService {
 
         log.info("为用户 {} 生成双Token成功", userId);
 
-        return TokenVO.builder().accessToken(accessToken).refreshToken(refreshToken).accessTokenExpireTime(accessTokenExpireTime).refreshTokenExpireTime(refreshTokenExpireTime).build();
+        // 4. 计算有效期（秒）
+        long accessExpiresIn = TimeUnit.HOURS.toSeconds(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
+        long refreshExpiresIn = TimeUnit.DAYS.toSeconds(AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS);
+
+        return TokenVO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .accessExpiresIn(accessExpiresIn)
+                .refreshExpiresIn(refreshExpiresIn)
+                .build();
     }
 
     /**

@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 /**
  * Token 响应 VO（登录和刷新共用）
  */
@@ -31,14 +29,14 @@ public class TokenVO {
     private String refreshToken;
 
     /**
-     * 访问令牌过期时间
+     * 访问令牌有效期（秒）
      */
-    @Schema(description = "访问令牌过期时间")
-    private LocalDateTime accessTokenExpireTime;
+    @Schema(description = "访问令牌有效期（秒）")
+    private Long accessExpiresIn;
 
     /**
-     * 刷新令牌过期时间
+     * 刷新令牌有效期（秒）
      */
-    @Schema(description = "刷新令牌过期时间")
-    private LocalDateTime refreshTokenExpireTime;
+    @Schema(description = "刷新令牌有效期（秒）")
+    private Long refreshExpiresIn;
 }
