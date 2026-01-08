@@ -6,7 +6,7 @@ package t.uni.server.auth.service;
  * 负责为新用户分配默认头像和昵称
  * </p>
  */
-public interface IUserDefaultService {
+public interface UserDefaultService {
 
     /**
      * 获取一个随机默认头像 URL

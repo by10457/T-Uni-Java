@@ -1,13 +1,12 @@
 package t.uni.server.auth.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import t.uni.server.auth.mapper.CoreUserDefaultAvatarMapper;
 import t.uni.server.auth.mapper.CoreUserDefaultNickNameMapper;
-import t.uni.server.auth.service.IUserDefaultService;
+import t.uni.server.auth.service.UserDefaultService;
 import t.uni.server.auth.util.WeightedRandomSelector;
 import t.uni.server.domain.entity.CoreUserDefaultAvatar;
 import t.uni.server.domain.entity.CoreUserDefaultNickName;
@@ -18,7 +17,7 @@ import t.uni.server.domain.entity.CoreUserDefaultNickName;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserDefaultServiceImpl implements IUserDefaultService {
+public class UserDefaultServiceImpl implements UserDefaultService {
 
     private final CoreUserDefaultAvatarMapper avatarMapper;
     private final CoreUserDefaultNickNameMapper nickNameMapper;

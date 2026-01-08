@@ -10,7 +10,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.server.common.context.UserContext;
-import t.uni.server.common.auth.ITokenService;
+import t.uni.server.common.auth.TokenService;
 import t.uni.server.domain.constant.AuthConstant;
 
 /**
@@ -24,7 +24,7 @@ import t.uni.server.domain.constant.AuthConstant;
 @RequiredArgsConstructor
 public class AuthInterceptor implements HandlerInterceptor {
 
-    private final ITokenService tokenService;
+    private final TokenService tokenService;
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response,

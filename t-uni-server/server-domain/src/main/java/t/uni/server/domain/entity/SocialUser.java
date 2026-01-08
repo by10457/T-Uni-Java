@@ -1,7 +1,10 @@
 package t.uni.server.domain.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import t.uni.server.domain.auth.IBusinessUser;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -13,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("social_user")
-public class SocialUser implements Serializable {
+public class SocialUser implements IBusinessUser, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;

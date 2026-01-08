@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.common.core.utils.JwtTokenUtil;
-import t.uni.server.common.auth.ITokenService;
+import t.uni.server.common.auth.TokenService;
 import t.uni.server.domain.constant.AuthConstant;
 import t.uni.server.domain.vo.auth.TokenVO;
 
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TokenServiceImpl implements ITokenService {
+public class TokenServiceImpl implements TokenService {
 
     private final StringRedisTemplate stringRedisTemplate;
 

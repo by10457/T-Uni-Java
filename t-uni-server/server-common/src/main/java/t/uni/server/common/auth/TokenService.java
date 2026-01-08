@@ -8,7 +8,7 @@ import t.uni.server.domain.vo.auth.TokenVO;
  * 负责双 Token（Access Token + Refresh Token）的生成、验证和刷新
  * </p>
  */
-public interface ITokenService {
+public interface TokenService {
 
     /**
      * 生成双 Token

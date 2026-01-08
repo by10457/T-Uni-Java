@@ -1,8 +1,6 @@
 package t.uni.server.auth.service.impl;
 
 import cn.binarywang.wx.miniapp.api.WxMaService;
-import cn.binarywang.wx.miniapp.bean.WxMaJscode2SessionResult;
-import cn.binarywang.wx.miniapp.bean.WxMaPhoneNumberInfo;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -14,10 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.server.auth.mapper.CoreUserMapper;
-import t.uni.server.auth.mapper.SocialUserMapper;
-import t.uni.server.auth.service.IUserDefaultService;
+import t.uni.server.auth.service.UserDefaultService;
 import t.uni.server.auth.service.WxAuthService;
-import t.uni.server.common.auth.ITokenService;
+import t.uni.server.domain.auth.IBusinessUser;
+import t.uni.server.domain.auth.IBusinessUserMapper;
+import t.uni.server.common.auth.TokenService;
+import t.uni.server.common.config.WxAuthProperties;
 import t.uni.server.domain.dto.auth.RefreshTokenDTO;
 import t.uni.server.domain.dto.auth.WxLoginDTO;
 import t.uni.server.domain.entity.CoreUser;
@@ -29,7 +29,8 @@ import java.time.LocalDateTime;
 /**
  * 微信认证服务实现
  * <p>
- * 基于 core_user + social_user 双表实现登录，使用双Token机制
+ * 基于 core_user + 业务用户表（如 social_user）双表实现登录，使用双Token机制
+ * 支持通过配置切换登录标识（maOpenId 或 unionId）
  * </p>
  */
 @Slf4j
@@ -38,10 +39,11 @@ import java.time.LocalDateTime;
 public class WxAuthServiceImpl implements WxAuthService {
 
     private final WxMaService wxMaService;
+    private final TokenService tokenService;
     private final CoreUserMapper coreUserMapper;
-    private final SocialUserMapper socialUserMapper;
-    private final ITokenService tokenService;
-    private final IUserDefaultService userDefaultService;
+    private final IBusinessUserMapper<? extends IBusinessUser> businessUserMapper;
+    private final UserDefaultService userDefaultService;
+    private final WxAuthProperties wxAuthProperties;
 
     /**
      * 微信小程序登录
@@ -53,31 +55,34 @@ public class WxAuthServiceImpl implements WxAuthService {
 
         try {
             // 1. 调用微信API获取session信息
-            WxMaJscode2SessionResult sessionInfo = wxMaService.getUserService().getSessionInfo(code);
+            var sessionInfo = wxMaService.getUserService().getSessionInfo(code);
             var openId = sessionInfo.getOpenid();
             var unionId = sessionInfo.getUnionid();
 
-            log.info("微信登录成功，openId: {}", openId);
+            log.info("微信登录成功，openId: {}, unionId: {}", openId, unionId);
 
-            // 2. 查询社交用户是否存在（通过 ma_open_id）
-            var socialUser = socialUserMapper.selectOne(Wrappers.<SocialUser>lambdaQuery().eq(SocialUser::getMaOpenId, openId));
+            // 2. 根据配置选择登录标识
+            String loginIdentifier = getLoginIdentifier(openId, unionId);
+
+            // 3. 查询业务用户是否存在
+            IBusinessUser businessUser = queryBusinessUser(loginIdentifier);
 
             Long userId;
-            if (socialUser == null) {
-                // 3. 新用户：创建 core_user 和 social_user
+            if (businessUser == null) {
+                // 4. 新用户：创建 core_user 和业务用户
                 userId = createNewUser(openId, unionId);
                 log.info("创建新用户，openId: {}, userId: {}", openId, userId);
             } else {
-                // 4. 老用户：更新 unionId（如果有变化）
-                userId = socialUser.getId();
-                updateExistingUser(socialUser, unionId);
+                // 5. 老用户：更新 unionId（如果有变化）
+                userId = businessUser.getId();
+                updateExistingUser(businessUser, unionId);
                 log.info("用户登录，userId: {}", userId);
             }
 
-            // 5. 更新最后登录时间
+            // 6. 更新最后登录时间
             updateLastLoginTime(userId);
 
-            // 6. 生成并返回双Token
+            // 7. 生成并返回双Token
             return tokenService.generateTokens(userId, openId);
 
         } catch (WxErrorException e) {
@@ -102,7 +107,7 @@ public class WxAuthServiceImpl implements WxAuthService {
     public String getPhoneNumber(String code, Long userId) {
         try {
             // 1. 调用微信API获取手机号
-            WxMaPhoneNumberInfo phoneNumberInfo = wxMaService.getUserService().getPhoneNumber(code);
+            var phoneNumberInfo = wxMaService.getUserService().getPhoneNumber(code);
             var phoneNumber = phoneNumberInfo.getPhoneNumber();
 
             log.info("获取手机号成功，userId: {}, phone: {}", userId, phoneNumber);
@@ -162,9 +167,7 @@ public class WxAuthServiceImpl implements WxAuthService {
         socialUser.setUnionId(unionId);
         socialUser.setStatus(1);
 
-        // 由于 social_user 的 id 是自增的，需要先插入再更新，或者使用手动设置
-        // 这里使用 REPLACE INTO 或直接设置（需要表允许手动设置主键）
-        socialUserMapper.insert(socialUser);
+        ((IBusinessUserMapper<IBusinessUser>) businessUserMapper).insert(socialUser);
 
         return coreUser.getId();
     }
@@ -172,13 +175,14 @@ public class WxAuthServiceImpl implements WxAuthService {
     /**
      * 更新已存在用户的信息
      */
-    private void updateExistingUser(SocialUser socialUser, String unionId) {
-        if (StrUtil.isNotBlank(unionId) && !unionId.equals(socialUser.getUnionId())) {
-            socialUser.setUnionId(unionId);
-            socialUserMapper.updateById(socialUser);
+    @SuppressWarnings("unchecked")
+    private void updateExistingUser(IBusinessUser businessUser, String unionId) {
+        if (StrUtil.isNotBlank(unionId) && !unionId.equals(businessUser.getUnionId())) {
+            businessUser.setUnionId(unionId);
+            ((IBusinessUserMapper<IBusinessUser>) businessUserMapper).updateById(businessUser);
 
             // 同步更新 core_user 的 unionId
-            var coreUser = coreUserMapper.selectById(socialUser.getId());
+            var coreUser = coreUserMapper.selectById(businessUser.getId());
             if (coreUser != null && !unionId.equals(coreUser.getUnionId())) {
                 coreUser.setUnionId(unionId);
                 coreUserMapper.updateById(coreUser);
@@ -195,6 +199,46 @@ public class WxAuthServiceImpl implements WxAuthService {
             coreUser.setLastLoginTime(LocalDateTime.now());
             coreUser.setNewUsageTime(LocalDateTime.now());
             coreUserMapper.updateById(coreUser);
+        }
+    }
+
+    /**
+     * 根据配置获取登录标识
+     *
+     * @param openId  微信 openId
+     * @param unionId 微信 unionId
+     * @return 登录标识（openId 或 unionId）
+     */
+    private String getLoginIdentifier(String openId, String unionId) {
+        if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
+            if (StrUtil.isBlank(unionId)) {
+                throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(),
+                    "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
+            }
+            log.info("使用 unionId 作为登录标识: {}", unionId);
+            return unionId;
+        }
+        log.info("使用 maOpenId 作为登录标识: {}", openId);
+        return openId;
+    }
+
+    /**
+     * 查询业务用户
+     *
+     * @param loginIdentifier 登录标识（openId 或 unionId）
+     * @return 业务用户，不存在则返回 null
+     */
+    @SuppressWarnings("unchecked")
+    private IBusinessUser queryBusinessUser(String loginIdentifier) {
+        IBusinessUserMapper<IBusinessUser> mapper = (IBusinessUserMapper<IBusinessUser>) businessUserMapper;
+        if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
+            return mapper.selectOne(
+                Wrappers.lambdaQuery(IBusinessUser.class)
+                    .eq(IBusinessUser::getUnionId, loginIdentifier));
+        } else {
+            return mapper.selectOne(
+                Wrappers.lambdaQuery(IBusinessUser.class)
+                    .eq(IBusinessUser::getMaOpenId, loginIdentifier));
         }
     }
 }
