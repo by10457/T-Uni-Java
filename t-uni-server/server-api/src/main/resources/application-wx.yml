@@ -1,7 +1,7 @@
 wx:
   miniapp:
     # 微信小程序AppID
-    appid: ${WX_MINIAPP_APPID:your_appid_here}
+    appid: ${WX_MINIAPP_APPID:}
     # 微信小程序AppSecret（建议通过环境变量注入）
     secret: ${WX_MINIAPP_SECRET:}
     # Token（用于消息加解密，可选）

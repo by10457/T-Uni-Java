@@ -1,6 +1,6 @@
 # API 配置
 api:
-  prefix: /api/mini/t_uni
+  prefix: /api
 
 server:
   port: 10457

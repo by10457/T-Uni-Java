@@ -21,8 +21,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/**") // 拦截所有请求
                 .excludePathPatterns(
-                        "/api/wx/auth/login",
-                        "/api/wx/auth/refreshToken",
+                        "/**/auth/wxLogin",
+                        "/**/auth/refreshToken",
                         "/error",
                         "/swagger-ui/**",
                         "/v3/api-docs/**"); // 排除登录等路径
