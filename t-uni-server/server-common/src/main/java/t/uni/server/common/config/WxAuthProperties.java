@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  * 微信认证配置属性
  * 从 application-wx.yml 中读取配置
  *
- * @author Claude
+ * @author lzx
  * @since 2026-01-08
  */
 @Data
@@ -47,8 +47,7 @@ public class WxAuthProperties {
         if (!"MA_OPEN_ID".equals(loginIdentifier) && !"UNION_ID".equals(loginIdentifier)) {
             throw new IllegalArgumentException(
                     "Invalid loginIdentifier: " + loginIdentifier +
-                            ". Must be 'MA_OPEN_ID' or 'UNION_ID'"
-            );
+                            ". Must be 'MA_OPEN_ID' or 'UNION_ID'");
         }
     }
 }
