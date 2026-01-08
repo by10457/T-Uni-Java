@@ -19,6 +19,5 @@
     <modules>
         <module>common-core</module>
         <module>common-config</module>
-        <module>common-web</module>
     </modules>
 </project>

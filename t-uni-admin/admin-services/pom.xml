@@ -18,7 +18,6 @@
 
     <modules>
         <module>system</module>
-        <module>configuration</module>
         <module>schedule</module>
     </modules>
 

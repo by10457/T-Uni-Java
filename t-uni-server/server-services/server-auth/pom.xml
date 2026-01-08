@@ -17,7 +17,14 @@
     <description>Server认证服务：微信登录、手机号获取等</description>
 
     <dependencies>
-  
+
+        <!-- Server Domain -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>server-domain</artifactId>
+            <version>${t-uni.version}</version>
+        </dependency>
+
         <!-- Server Common -->
         <dependency>
             <groupId>t.uni</groupId>

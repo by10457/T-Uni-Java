@@ -2,8 +2,8 @@ package t.uni.api.controller.system;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import t.uni.common.core.exception.BaseException;
@@ -17,13 +17,14 @@ import t.uni.domain.system.dto.user.RefreshTokenDto;
 import t.uni.domain.system.vo.user.RefreshTokenVo;
 import t.uni.system.service.UserLoginService;
 
+
 @Tag(name = "普通用户登录", description = "用户登录相关接口")
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user")
 public class UserLoginController {
 
-    @Resource
-    private UserLoginService userLoginService;
+    private final UserLoginService userLoginService;
 
     @Operation(summary = "普通用户登录", description = "前端用户登录")
     @PostMapping("login")
@@ -35,7 +36,8 @@ public class UserLoginController {
     @Operation(summary = "普通用户登录发送邮件验证码", description = "登录发送邮件验证码")
     @PostMapping("public/email-code")
     public Result<String> sendLoginEmail(String email) {
-        if (!StringUtils.hasText(email)) throw new BaseException(ResultCodeEnum.REQUEST_IS_EMPTY);
+        if (!StringUtils.hasText(email))
+            throw new BaseException(ResultCodeEnum.REQUEST_IS_EMPTY);
 
         userLoginService.sendLoginEmail(email);
         return Result.success(ResultCodeEnum.EMAIL_CODE_SEND_SUCCESS);
