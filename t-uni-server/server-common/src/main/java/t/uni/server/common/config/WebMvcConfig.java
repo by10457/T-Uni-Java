@@ -23,6 +23,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/**/auth/wxLogin",
                         "/**/auth/refreshToken",
+                        "/health/**",
                         "/error",
                         "/swagger-ui/**",
                         "/v3/api-docs/**"); // 排除登录等路径
