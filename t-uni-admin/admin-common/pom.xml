@@ -14,21 +14,54 @@
     <artifactId>admin-common</artifactId>
     <packaging>jar</packaging>
     <name>Admin Common</name>
-    <description>Admin专属通用模块</description>
+    <description>Admin通用模块</description>
 
     <dependencies>
-        <!-- 依赖顶层common模块 -->
+        <!-- 依赖 admin-domain -->
         <dependency>
             <groupId>t.uni</groupId>
-            <artifactId>common-core</artifactId>
+            <artifactId>admin-domain</artifactId>
+            <version>${project.version}</version>
         </dependency>
+
+        <!-- 依赖 common-config -->
         <dependency>
             <groupId>t.uni</groupId>
             <artifactId>common-config</artifactId>
         </dependency>
+
+        <!-- 单元测试 -->
         <dependency>
-            <groupId>t.uni</groupId>
-            <artifactId>common-web</artifactId>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JWT -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt</artifactId>
+        </dependency>
+
+        <!-- 查询ip地址 -->
+        <dependency>
+            <groupId>org.lionsoul</groupId>
+            <artifactId>ip2region</artifactId>
         </dependency>
     </dependencies>
 </project>

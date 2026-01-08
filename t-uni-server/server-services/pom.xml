@@ -18,7 +18,6 @@
 
     <modules>
         <module>server-auth</module>
-        <module>server-payment</module>
     </modules>
 
     <dependencies>

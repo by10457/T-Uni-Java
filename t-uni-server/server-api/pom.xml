@@ -22,10 +22,6 @@
             <groupId>t.uni</groupId>
             <artifactId>server-auth</artifactId>
         </dependency>
-        <dependency>
-            <groupId>t.uni</groupId>
-            <artifactId>server-payment</artifactId>
-        </dependency>
 
         <!-- Server Common -->
         <dependency>

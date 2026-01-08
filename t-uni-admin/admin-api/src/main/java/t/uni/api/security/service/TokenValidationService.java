@@ -7,7 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import t.uni.api.security.exception.CustomAuthenticationException;
 import t.uni.common.core.result.ResultCodeEnum;
-import t.uni.core.utils.JwtTokenUtil;
+import t.uni.common.core.utils.JwtTokenUtil;
 import t.uni.domain.common.constant.RedisUserConstant;
 import t.uni.domain.common.model.dto.security.TokenInfo;
 import t.uni.domain.common.model.vo.LoginVo;

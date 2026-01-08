@@ -19,7 +19,7 @@ import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.core.context.BaseContext;
 import t.uni.core.utils.IpUtil;
-import t.uni.core.utils.JwtTokenUtil;
+import t.uni.common.core.utils.JwtTokenUtil;
 import t.uni.domain.common.constant.RedisUserConstant;
 import t.uni.domain.common.constant.UserConstant;
 import t.uni.domain.common.enums.EmailTemplateEnums;

@@ -88,11 +88,6 @@
             </dependency>
             <dependency>
                 <groupId>t.uni</groupId>
-                <artifactId>admin-core-common</artifactId>
-                <version>${t-uni.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>t.uni</groupId>
                 <artifactId>admin-system</artifactId>
                 <version>${t-uni.version}</version>
             </dependency>
@@ -120,17 +115,7 @@
             </dependency>
             <dependency>
                 <groupId>t.uni</groupId>
-                <artifactId>server-core-common</artifactId>
-                <version>${t-uni.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>t.uni</groupId>
                 <artifactId>server-auth</artifactId>
-                <version>${t-uni.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>t.uni</groupId>
-                <artifactId>server-payment</artifactId>
                 <version>${t-uni.version}</version>
             </dependency>
 

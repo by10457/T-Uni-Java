@@ -23,10 +23,10 @@
     </modules>
 
     <dependencies>
-        <!-- 依赖 admin-core-common -->
+        <!-- 依赖 admin-common -->
         <dependency>
             <groupId>t.uni</groupId>
-            <artifactId>admin-core-common</artifactId>
+            <artifactId>admin-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 
