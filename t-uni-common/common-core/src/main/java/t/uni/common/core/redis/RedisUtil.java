@@ -35,7 +35,7 @@ public class RedisUtil {
             redisTemplate.opsForValue().set(key, value);
             return true;
         } catch (Exception e) {
-            log.error("Redis set error, key: {}", key, e);
+            log.error("Redis设置缓存失败，key: {}", key, e);
             return false;
         }
     }
@@ -57,7 +57,7 @@ public class RedisUtil {
             }
             return true;
         } catch (Exception e) {
-            log.error("Redis set with expire error, key: {}, time: {}", key, time, e);
+            log.error("Redis设置带过期时间缓存失败，key: {}, 过期时间: {}", key, time, e);
             return false;
         }
     }
@@ -80,7 +80,7 @@ public class RedisUtil {
             }
             return true;
         } catch (Exception e) {
-            log.error("Redis set with expire error, key: {}, time: {}, unit: {}", key, time, timeUnit, e);
+            log.error("Redis设置带过期时间缓存失败，key: {}, 过期时间: {}, 时间单位: {}", key, time, timeUnit, e);
             return false;
         }
     }
@@ -112,7 +112,7 @@ public class RedisUtil {
         try {
             return (T) value;
         } catch (ClassCastException e) {
-            log.error("Redis get error, key: {}, class: {}", key, clazz.getName(), e);
+            log.error("Redis获取缓存失败，key: {}, 类型: {}", key, clazz.getName(), e);
             return null;
         }
     }
@@ -145,7 +145,7 @@ public class RedisUtil {
         try {
             return redisTemplate.hasKey(key);
         } catch (Exception e) {
-            log.error("Redis hasKey error, key: {}", key, e);
+            log.error("Redis检查key是否存在失败，key: {}", key, e);
             return false;
         }
     }
@@ -162,7 +162,7 @@ public class RedisUtil {
                 redisTemplate.expire(key, time, TimeUnit.SECONDS);
             }
         } catch (Exception e) {
-            log.error("Redis expire error, key: {}, time: {}", key, time, e);
+            log.error("Redis设置过期时间失败，key: {}, 过期时间: {}", key, time, e);
         }
     }
 
@@ -181,7 +181,7 @@ public class RedisUtil {
             }
             return true;
         } catch (Exception e) {
-            log.error("Redis expire error, key: {}, time: {}, unit: {}", key, time, timeUnit, e);
+            log.error("Redis设置过期时间失败，key: {}, 过期时间: {}, 时间单位: {}", key, time, timeUnit, e);
             return false;
         }
     }
@@ -259,7 +259,7 @@ public class RedisUtil {
             redisTemplate.opsForHash().putAll(key, map);
             return true;
         } catch (Exception e) {
-            log.error("Redis hSetAll error, key: {}", key, e);
+            log.error("Redis设置Hash表失败，key: {}", key, e);
             return false;
         }
     }
@@ -280,7 +280,7 @@ public class RedisUtil {
             }
             return true;
         } catch (Exception e) {
-            log.error("Redis hSetAll with expire error, key: {}, time: {}", key, time, e);
+            log.error("Redis设置带过期时间Hash表失败，key: {}, 过期时间: {}", key, time, e);
             return false;
         }
     }
@@ -298,7 +298,7 @@ public class RedisUtil {
             redisTemplate.opsForHash().put(key, item, value);
             return true;
         } catch (Exception e) {
-            log.error("Redis hSet error, key: {}, item: {}", key, item, e);
+            log.error("Redis设置Hash表项失败，key: {}, 项: {}", key, item, e);
             return false;
         }
     }
@@ -320,7 +320,7 @@ public class RedisUtil {
             }
             return true;
         } catch (Exception e) {
-            log.error("Redis hSet with expire error, key: {}, item: {}, time: {}", key, item, time, e);
+            log.error("Redis设置带过期时间Hash表项失败，key: {}, 项: {}, 过期时间: {}", key, item, time, e);
             return false;
         }
     }
@@ -385,7 +385,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForList().range(key, start, end);
         } catch (Exception e) {
-            log.error("Redis lRange error, key: {}, start: {}, end: {}", key, start, end, e);
+            log.error("Redis获取列表范围失败，key: {}, 起始位置: {}, 结束位置: {}", key, start, end, e);
             return Collections.emptyList();
         }
     }
@@ -400,7 +400,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForList().size(key);
         } catch (Exception e) {
-            log.error("Redis lSize error, key: {}", key, e);
+            log.error("Redis获取列表大小失败，key: {}", key, e);
             return 0L;
         }
     }
@@ -416,7 +416,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForList().index(key, index);
         } catch (Exception e) {
-            log.error("Redis lIndex error, key: {}, index: {}", key, index, e);
+            log.error("Redis获取列表元素失败，key: {}, 索引: {}", key, index, e);
             return null;
         }
     }
@@ -433,7 +433,7 @@ public class RedisUtil {
             redisTemplate.opsForList().rightPush(key, value);
             return true;
         } catch (Exception e) {
-            log.error("Redis lPush error, key: {}", key, e);
+            log.error("Redis向列表添加元素失败，key: {}", key, e);
             return false;
         }
     }
@@ -454,7 +454,7 @@ public class RedisUtil {
             }
             return true;
         } catch (Exception e) {
-            log.error("Redis lPush with expire error, key: {}, time: {}", key, time, e);
+            log.error("Redis向列表添加带过期时间元素失败，key: {}, 过期时间: {}", key, time, e);
             return false;
         }
     }
@@ -471,7 +471,7 @@ public class RedisUtil {
             redisTemplate.opsForList().rightPushAll(key, value);
             return true;
         } catch (Exception e) {
-            log.error("Redis lPushAll error, key: {}", key, e);
+            log.error("Redis向列表批量添加元素失败，key: {}", key, e);
             return false;
         }
     }
@@ -492,7 +492,7 @@ public class RedisUtil {
             }
             return true;
         } catch (Exception e) {
-            log.error("Redis lPushAll with expire error, key: {}, time: {}", key, time, e);
+            log.error("Redis向列表批量添加带过期时间元素失败，key: {}, 过期时间: {}", key, time, e);
             return false;
         }
     }
@@ -510,7 +510,7 @@ public class RedisUtil {
             redisTemplate.opsForList().set(key, index, value);
             return true;
         } catch (Exception e) {
-            log.error("Redis lUpdateIndex error, key: {}, index: {}", key, index, e);
+            log.error("Redis更新列表元素失败，key: {}, 索引: {}", key, index, e);
             return false;
         }
     }
@@ -527,7 +527,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForList().remove(key, count, value);
         } catch (Exception e) {
-            log.error("Redis lRemove error, key: {}, count: {}", key, count, e);
+            log.error("Redis移除列表元素失败，key: {}, 数量: {}", key, count, e);
             return 0L;
         }
     }
@@ -544,7 +544,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForSet().members(key);
         } catch (Exception e) {
-            log.error("Redis sMembers error, key: {}", key, e);
+            log.error("Redis获取集合成员失败，key: {}", key, e);
             return Collections.emptySet();
         }
     }
@@ -561,7 +561,7 @@ public class RedisUtil {
             Boolean result = redisTemplate.opsForSet().isMember(key, value);
             return result != null && result;
         } catch (Exception e) {
-            log.error("Redis sHasKey error, key: {}", key, e);
+            log.error("Redis检查集合成员是否存在失败，key: {}", key, e);
             return false;
         }
     }
@@ -577,7 +577,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForSet().add(key, values);
         } catch (Exception e) {
-            log.error("Redis sAdd error, key: {}", key, e);
+            log.error("Redis向集合添加元素失败，key: {}", key, e);
             return 0L;
         }
     }
@@ -598,7 +598,7 @@ public class RedisUtil {
             }
             return count;
         } catch (Exception e) {
-            log.error("Redis sAdd with expire error, key: {}, time: {}", key, time, e);
+            log.error("Redis向集合添加带过期时间元素失败，key: {}, 过期时间: {}", key, time, e);
             return 0L;
         }
     }
@@ -613,7 +613,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForSet().size(key);
         } catch (Exception e) {
-            log.error("Redis sSize error, key: {}", key, e);
+            log.error("Redis获取集合大小失败，key: {}", key, e);
             return 0L;
         }
     }
@@ -629,7 +629,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForSet().remove(key, values);
         } catch (Exception e) {
-            log.error("Redis sRemove error, key: {}", key, e);
+            log.error("Redis从集合移除元素失败，key: {}", key, e);
             return 0L;
         }
     }
@@ -649,7 +649,7 @@ public class RedisUtil {
             Boolean result = redisTemplate.opsForZSet().add(key, value, score);
             return result != null && result;
         } catch (Exception e) {
-            log.error("Redis zAdd error, key: {}, score: {}", key, score, e);
+            log.error("Redis向有序集合添加元素失败，key: {}, 分数: {}", key, score, e);
             return false;
         }
     }
@@ -665,7 +665,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().add(key, values);
         } catch (Exception e) {
-            log.error("Redis zAdd batch error, key: {}", key, e);
+            log.error("Redis批量添加有序集合元素失败，key: {}", key, e);
             return 0L;
         }
     }
@@ -680,7 +680,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().size(key);
         } catch (Exception e) {
-            log.error("Redis zSize error, key: {}", key, e);
+            log.error("Redis获取有序集合大小失败，key: {}", key, e);
             return 0L;
         }
     }
@@ -697,7 +697,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().range(key, start, end);
         } catch (Exception e) {
-            log.error("Redis zRange error, key: {}, start: {}, end: {}", key, start, end, e);
+            log.error("Redis获取有序集合范围失败，key: {}, 起始位置: {}, 结束位置: {}", key, start, end, e);
             return Collections.emptySet();
         }
     }
@@ -714,7 +714,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().reverseRange(key, start, end);
         } catch (Exception e) {
-            log.error("Redis zReverseRange error, key: {}, start: {}, end: {}", key, start, end, e);
+            log.error("Redis获取有序集合反向范围失败，key: {}, 起始位置: {}, 结束位置: {}", key, start, end, e);
             return Collections.emptySet();
         }
     }
@@ -730,7 +730,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().remove(key, values);
         } catch (Exception e) {
-            log.error("Redis zRemove error, key: {}", key, e);
+            log.error("Redis从有序集合移除元素失败，key: {}", key, e);
             return 0L;
         }
     }
@@ -747,7 +747,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().incrementScore(key, value, delta);
         } catch (Exception e) {
-            log.error("Redis zIncrementScore error, key: {}, delta: {}", key, delta, e);
+            log.error("Redis增加有序集合元素分数失败，key: {}, 增量: {}", key, delta, e);
             return null;
         }
     }
@@ -763,7 +763,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().rank(key, value);
         } catch (Exception e) {
-            log.error("Redis zRank error, key: {}", key, e);
+            log.error("Redis获取有序集合元素排名失败，key: {}", key, e);
             return null;
         }
     }
@@ -779,7 +779,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().reverseRank(key, value);
         } catch (Exception e) {
-            log.error("Redis zReverseRank error, key: ", key, e);
+            log.error("Redis获取有序集合元素反向排名失败，key: {}", key, e);
             return null;
         }
     }
@@ -799,7 +799,7 @@ public class RedisUtil {
             Boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, expireTime, TimeUnit.SECONDS);
             return result != null && result;
         } catch (Exception e) {
-            log.error("Redis tryLock error, key: {}, expireTime: {}", key, expireTime, e);
+            log.error("Redis尝试获取分布式锁失败，key: {}, 过期时间: {}", key, expireTime, e);
             return false;
         }
     }
@@ -819,7 +819,7 @@ public class RedisUtil {
             }
             return false;
         } catch (Exception e) {
-            log.error("Redis releaseLock error, key: {}", key, e);
+            log.error("Redis释放分布式锁失败，key: {}", key, e);
             return false;
         }
     }
@@ -836,7 +836,7 @@ public class RedisUtil {
         try {
             return redisTemplate.keys(pattern);
         } catch (Exception e) {
-            log.error("Redis keys error, pattern: {}", pattern, e);
+            log.error("Redis获取键列表失败，模式: {}", pattern, e);
             return Collections.emptySet();
         }
     }
@@ -855,7 +855,7 @@ public class RedisUtil {
             }
             return 0L;
         } catch (Exception e) {
-            log.error("Redis deleteByPattern error, pattern: {}", pattern, e);
+            log.error("Redis按模式删除键失败，模式: {}", pattern, e);
             return 0L;
         }
     }
@@ -872,7 +872,7 @@ public class RedisUtil {
             redisTemplate.rename(oldKey, newKey);
             return true;
         } catch (Exception e) {
-            log.error("Redis rename error, oldKey: {}, newKey: {}", oldKey, newKey, e);
+            log.error("Redis重命名键失败，旧键: {}, 新键: {}", oldKey, newKey, e);
             return false;
         }
     }
@@ -888,7 +888,7 @@ public class RedisUtil {
         try {
             return redisTemplate.renameIfAbsent(oldKey, newKey);
         } catch (Exception e) {
-            log.error("Redis renameIfAbsent error, oldKey: {}, newKey: {}", oldKey, newKey, e);
+            log.error("Redis条件重命名键失败，旧键: {}, 新键: {}", oldKey, newKey, e);
             return false;
         }
     }
