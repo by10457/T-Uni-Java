@@ -1,4 +1,4 @@
-package t.uni.common.config.redis;
+package t.uni.common.core.redis;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -779,7 +779,7 @@ public class RedisUtil {
         try {
             return redisTemplate.opsForZSet().reverseRank(key, value);
         } catch (Exception e) {
-            log.error("Redis zReverseRank error, key: {}", key, e);
+            log.error("Redis zReverseRank error, key: ", key, e);
             return null;
         }
     }
@@ -815,8 +815,7 @@ public class RedisUtil {
         try {
             Object currentValue = redisTemplate.opsForValue().get(key);
             if (currentValue != null && currentValue.equals(value)) {
-                Boolean result = redisTemplate.delete(key);
-                return result != null && result;
+                return redisTemplate.delete(key);
             }
             return false;
         } catch (Exception e) {
@@ -851,7 +850,7 @@ public class RedisUtil {
     public Long deleteByPattern(String pattern) {
         try {
             Set<String> keys = redisTemplate.keys(pattern);
-            if (keys != null && !keys.isEmpty()) {
+            if (!keys.isEmpty()) {
                 return redisTemplate.delete(keys);
             }
             return 0L;

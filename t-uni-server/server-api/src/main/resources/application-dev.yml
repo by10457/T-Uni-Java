@@ -4,7 +4,7 @@ server:
 logging:
   level:
     t.uni.server: info
-    root: info
+    root: warn
   pattern:
     dateformat: HH:mm:ss:SSS
   file:
