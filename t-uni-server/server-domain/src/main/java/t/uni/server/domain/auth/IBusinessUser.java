@@ -7,7 +7,7 @@ import java.io.Serializable;
  * 所有业务场景的用户实体都应实现此接口
  * 支持不同业务场景使用不同的实体类（如 SocialUser、EduUser、HygieneUser）
  *
- * @author Claude
+ * @author lzx
  * @since 2026-01-08
  */
 public interface IBusinessUser extends Serializable {

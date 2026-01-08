@@ -13,7 +13,7 @@ import t.uni.server.domain.auth.IBusinessUserMapper;
  * <p>
  * 复制项目时，只需修改此配置类即可切换到其他 Mapper（如 EduUserMapper、HygieneUserMapper）
  *
- * @author Claude
+ * @author lzx
  * @since 2026-01-08
  */
 @Configuration
