@@ -19,7 +19,7 @@ import t.uni.server.domain.vo.auth.UserInfoVO;
  */
 @Tag(name = "用户信息", description = "用户信息相关接口（需认证）")
 @RestController
-@RequestMapping("/api/wx/user")
+@RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
 

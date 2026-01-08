@@ -1,4 +1,9 @@
+# API 配置
+api:
+  prefix: /api/mini/t_uni
+
 server:
+  port: 10457
   tomcat:
     threads:
       max: 1000

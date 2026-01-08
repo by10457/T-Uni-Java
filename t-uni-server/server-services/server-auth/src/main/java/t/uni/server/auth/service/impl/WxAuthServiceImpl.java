@@ -41,9 +41,9 @@ public class WxAuthServiceImpl implements WxAuthService {
     private final WxMaService wxMaService;
     private final TokenService tokenService;
     private final CoreUserMapper coreUserMapper;
-    private final IBusinessUserMapper<? extends IBusinessUser> businessUserMapper;
-    private final UserDefaultService userDefaultService;
     private final WxAuthProperties wxAuthProperties;
+    private final UserDefaultService userDefaultService;
+    private final IBusinessUserMapper<? extends IBusinessUser> businessUserMapper;
 
     /**
      * 微信小程序登录
@@ -212,8 +212,7 @@ public class WxAuthServiceImpl implements WxAuthService {
     private String getLoginIdentifier(String openId, String unionId) {
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
             if (StrUtil.isBlank(unionId)) {
-                throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(),
-                        "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
+                throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(), "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
             }
             log.info("使用 unionId 作为登录标识: {}", unionId);
             return unionId;
@@ -232,13 +231,9 @@ public class WxAuthServiceImpl implements WxAuthService {
     private IBusinessUser queryBusinessUser(String loginIdentifier) {
         IBusinessUserMapper<IBusinessUser> mapper = (IBusinessUserMapper<IBusinessUser>) businessUserMapper;
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
-            return mapper.selectOne(
-                    Wrappers.lambdaQuery(IBusinessUser.class)
-                            .eq(IBusinessUser::getUnionId, loginIdentifier));
+            return mapper.selectOne(Wrappers.lambdaQuery(IBusinessUser.class).eq(IBusinessUser::getUnionId, loginIdentifier));
         } else {
-            return mapper.selectOne(
-                    Wrappers.lambdaQuery(IBusinessUser.class)
-                            .eq(IBusinessUser::getMaOpenId, loginIdentifier));
+            return mapper.selectOne(Wrappers.lambdaQuery(IBusinessUser.class).eq(IBusinessUser::getMaOpenId, loginIdentifier));
         }
     }
 }

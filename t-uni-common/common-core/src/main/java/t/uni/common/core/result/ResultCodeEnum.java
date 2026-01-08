@@ -68,11 +68,11 @@ public enum ResultCodeEnum {
     ADMIN_ROLE_CAN_NOT_DELETED(219, "无法删除admin角色"),
     ROUTER_RANK_NEED_LARGER_THAN_THE_PARENT(219, "设置路由等级需要大于或等于父级的路由等级"),
 
-    // 无权访问 403
-    FAIL_NO_ACCESS_DENIED(403, "无权访问"),
-    FAIL_NO_ACCESS_DENIED_USER_OFFLINE(403, "用户强制下线"),
-    TOKEN_PARSING_FAILED(403, "token解析失败"),
-    TOKEN_EXPIRED(403, "token已过期"),
+    // 无权访问 401
+    FAIL_NO_ACCESS_DENIED(401, "无权访问"),
+    FAIL_NO_ACCESS_DENIED_USER_OFFLINE(401, "用户强制下线"),
+    TOKEN_PARSING_FAILED(401, "token解析失败"),
+    TOKEN_EXPIRED(401, "token已过期"),
 
     // 系统错误 500
     UNKNOWN_EXCEPTION(500, "服务异常"),

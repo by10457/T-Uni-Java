@@ -39,9 +39,7 @@ public class TokenServiceImpl implements TokenService {
         claims.put(AuthConstant.CLAIM_OPEN_ID, openId);
 
         var accessTokenExpireTime = LocalDateTime.now().plusHours(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
-        var accessToken = ServerJwtTokenUtil.createTokenWithMap(
-                claims,
-                Date.from(accessTokenExpireTime.atZone(ZoneId.systemDefault()).toInstant()));
+        var accessToken = ServerJwtTokenUtil.createTokenWithMap(claims, Date.from(accessTokenExpireTime.atZone(ZoneId.systemDefault()).toInstant()));
 
         // 2. 生成 Refresh Token（UUID）
         var refreshToken = UUID.randomUUID().toString().replace("-", "");
@@ -61,12 +59,7 @@ public class TokenServiceImpl implements TokenService {
 
         log.info("为用户 {} 生成双Token成功", userId);
 
-        return TokenVO.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .accessTokenExpireTime(accessTokenExpireTime)
-                .refreshTokenExpireTime(refreshTokenExpireTime)
-                .build();
+        return TokenVO.builder().accessToken(accessToken).refreshToken(refreshToken).accessTokenExpireTime(accessTokenExpireTime).refreshTokenExpireTime(refreshTokenExpireTime).build();
     }
 
     /**

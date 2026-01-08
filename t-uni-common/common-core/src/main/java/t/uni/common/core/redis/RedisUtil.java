@@ -270,18 +270,15 @@ public class RedisUtil {
      * @param key  键
      * @param map  对应多个键值
      * @param time 时间(秒)
-     * @return true成功 false失败
      */
-    public boolean hSetAll(String key, Map<String, Object> map, long time) {
+    public void hSetAll(String key, Map<String, Object> map, long time) {
         try {
             redisTemplate.opsForHash().putAll(key, map);
             if (time > 0) {
                 expire(key, time);
             }
-            return true;
         } catch (Exception e) {
             log.error("Redis设置带过期时间Hash表失败，key: {}, 过期时间: {}", key, time, e);
-            return false;
         }
     }
 
