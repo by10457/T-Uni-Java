@@ -3,7 +3,7 @@ package t.uni.server.api.controller.user;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import t.uni.common.core.result.Result;
@@ -26,7 +26,7 @@ public class UserController {
     private final IUserInfoService userInfoService;
 
     @Operation(summary = "获取当前用户信息", description = "获取当前登录用户的详细信息")
-    @PostMapping("/getUserInfo")
+    @GetMapping("/getUserInfo")
     public Result<UserInfoVO> getUserInfo() {
         // 从上下文获取当前用户ID
         var userId = UserContext.getUserId();

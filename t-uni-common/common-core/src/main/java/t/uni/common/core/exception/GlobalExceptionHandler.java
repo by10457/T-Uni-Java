@@ -2,133 +2,151 @@ package t.uni.common.core.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.util.StringUtils;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import t.uni.common.core.result.Result;
 import t.uni.common.core.result.ResultCodeEnum;
 
-import java.nio.file.AccessDeniedException;
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 全局异常拦截器
+ * 全局异常拦截器 (最终优化版)
+ * <p>
+ * 核心策略：
+ * 1. 精准捕获：优先使用框架具体的异常类 (如 DuplicateKeyException)，而不是去解析字符串。
+ * 2. 安全兜底：未知的 RuntimeException 统一屏蔽细节，防止 SQL/类结构泄露。
+ * 3. 规范响应：参数错误返回明确提示，系统错误记录详细日志但只返回模糊提示。
  */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
-    // 自定义异常信息
+
+    private static final String DEFAULT_SERVER_ERROR_MSG = "服务器繁忙，请稍后重试";
+
+    /**
+     * 1. 业务自定义异常
+     * 说明：业务层主动抛出的，通常包含对用户友好的提示，直接返回。
+     */
     @ExceptionHandler(BaseException.class)
-    @ResponseBody
-    public Result<Object> exceptionHandler(BaseException exception) {
-        Integer code = exception.getCode() != null ? exception.getCode() : 500;
-        return Result.error(null, code, exception.getMessage());
+    public Result<Object> handleBaseException(BaseException e) {
+        log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage());
+        Integer code = e.getCode() != null ? e.getCode() : 500;
+        return Result.error(null, code, e.getMessage());
     }
 
-    // 运行时异常信息
-    @ExceptionHandler(RuntimeException.class)
-    @ResponseBody
-    public Result<Object> exceptionHandler(RuntimeException exception) {
-        String message = exception.getMessage();
-        message = StringUtils.hasText(message) ? message : "服务器异常";
+    /**
+     * 2. 参数校验异常 (@RequestBody JSON格式)
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result<Object> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+        log.warn("参数校验失败(Body): {}", message);
+        // 建议使用 400 状态码或业务约定的参数错误码
+        return Result.error(null, ResultCodeEnum.PARAM_ERROR.getCode(), message);
+    }
 
-        // Spring Security 授权异常（通过类名匹配，避免直接依赖）
-        String exceptionClassName = exception.getClass().getName();
-        if (exceptionClassName.contains("AuthorizationDeniedException") ||
-                exceptionClassName.contains("AccessDeniedException")) {
-            log.warn("安全授权异常：{}", message);
+    /**
+     * 2.1 参数绑定异常 (@RequestParam / Form表单)
+     */
+    @ExceptionHandler(BindException.class)
+    public Result<Object> handleBindException(BindException e) {
+        String message = e.getAllErrors().stream()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+        log.warn("参数校验失败(Param): {}", message);
+        return Result.error(null, ResultCodeEnum.PARAM_ERROR.getCode(), message);
+    }
+
+    /**
+     * 3. 请求体格式错误 (如 JSON 语法错误)
+     * 说明：这就代替了原来的 "JSON parse error" 正则匹配
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Result<Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.warn("请求体读取失败: {}", e.getMessage());
+        return Result.error(null, 500, "请求参数格式错误，请检查JSON格式");
+    }
+
+    /**
+     * 4. 数据库唯一键冲突
+     * 说明：这就代替了原来的 "Duplicate entry" 正则匹配
+     */
+    @ExceptionHandler(DuplicateKeyException.class)
+    public Result<Object> handleDuplicateKeyException(DuplicateKeyException e) {
+        log.error("数据库唯一键冲突", e);
+        return Result.error(null, 500, "数据已存在，请勿重复提交");
+    }
+
+    /**
+     * 5. 数据库完整性约束异常 (如字段过长、非空字段为空)
+     * 说明：这就代替了原来的 "Data too long" 正则匹配
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public Result<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        log.error("数据库完整性异常", e);
+        return Result.error(null, 500, "提交的数据不符合规范(如内容过长或缺项)");
+    }
+
+    /**
+     * 6. 兜底 SQL 异常 (防止部分数据库驱动未封装成 DataIntegrityViolationException)
+     */
+    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
+    public Result<Object> handleSQLIntegrityException(SQLIntegrityConstraintViolationException e) {
+        log.error("SQL原生约束异常", e);
+        String msg = e.getMessage();
+        if (msg != null && msg.contains("Duplicate entry")) {
+            return Result.error(null, 500, "数据已存在，请勿重复提交");
+        }
+        return Result.error(null, 500, "数据操作失败");
+    }
+
+    /**
+     * 7. 404 异常 (需要在 yml 配置 throw-exception-if-no-handler-found: true)
+     */
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public Result<Object> handleNoHandlerFoundException(NoHandlerFoundException e) {
+        log.warn("接口不存在: {}", e.getRequestURL());
+        return Result.error(null, 404, "接口不存在");
+    }
+
+    /**
+     * 8. 最终全能兜底
+     * 说明：处理 Security 异常、MyBatis 系统异常以及所有未知的 RuntimeException
+     */
+    @ExceptionHandler(Exception.class)
+    public Result<Object> handleException(Exception e) {
+        String className = e.getClass().getName();
+        String message = e.getMessage();
+
+        // --- 特殊处理 Spring Security ---
+        // 使用字符串匹配，防止 common 模块没有引入 security 依赖导致编译报错
+        if (className.contains("AccessDeniedException") ||
+                className.contains("AuthorizationDeniedException")) {
+            log.warn("权限不足: {}", message);
             return Result.error(ResultCodeEnum.FAIL_NO_ACCESS_DENIED);
         }
 
-        // 解析异常
-        String jsonParseError = "JSON parse error (.*)";
-        Matcher jsonParseErrorMatcher = Pattern.compile(jsonParseError).matcher(message);
-        if (jsonParseErrorMatcher.find()) {
-            return Result.error(null, 500, "JSON解析异常 " + jsonParseErrorMatcher.group(1));
+        // --- MyBatis / 数据库连接层面的致命错误 ---
+        if (className.contains("MyBatisSystemException") ||
+                className.contains("PersistenceException")) {
+            log.error("持久层严重错误", e);
+            return Result.error(null, 500, "数据库服务异常");
         }
 
-        // 数据过大
-        String dataTooLongError = "Data too long for column (.*?) at row 1";
-        Matcher dataTooLongErrorMatcher = Pattern.compile(dataTooLongError).matcher(message);
-        if (dataTooLongErrorMatcher.find()) {
-            return Result.error(null, 500, dataTooLongErrorMatcher.group(1) + " 字段数据过大");
-        }
+        // --- 未知异常 ---
+        // 记录完整堆栈给开发看
+        log.error("系统未知异常", e);
 
-        // 主键冲突
-        String primaryKeyError = "Duplicate entry '(.*?)' for key .*";
-        Matcher primaryKeyErrorMatcher = Pattern.compile(primaryKeyError).matcher(message);
-        if (primaryKeyErrorMatcher.find()) {
-            String duplicateValue = primaryKeyErrorMatcher.group(1);
-            // 判断是否是手机号格式（11位数字）
-            if (duplicateValue.matches("^\\d{11}$")) {
-                return Result.error(null, 500, "该手机号已经存在");
-            }
-            return Result.error(null, 500, "[" + duplicateValue + "]已存在");
-        }
-
-        // corn表达式错误
-        String cronExpression = "CronExpression '(.*?)' is invalid";
-        Matcher cronExpressionMatcher = Pattern.compile(cronExpression).matcher(message);
-        if (cronExpressionMatcher.find()) {
-            return Result.error(null, 500, "表达式 " + cronExpressionMatcher.group(1) + " 不合法");
-        }
-
-        // MyBatis 异常处理（通过类名匹配，避免直接依赖）
-        if (exceptionClassName.contains("MyBatisSystemException") ||
-                exceptionClassName.contains("PersistenceException")) {
-            log.error("MyBatis/Persistence 异常", exception);
-            return Result.error(null, 500, "数据库异常");
-        }
-
-        log.error("GlobalExceptionHandler===>运行时异常信息：{}", message, exception);
-        return Result.error(null, 500, message);
-    }
-
-    // 表单验证字段
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<String> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        log.error("表单验证失败");
-        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.joining(", "));
-        return Result.error(null, 201, errorMessage);
-    }
-
-    // 特定异常处理
-    @ExceptionHandler(ArithmeticException.class)
-    @ResponseBody
-    public Result<Object> error(ArithmeticException exception) {
-        log.error("GlobalExceptionHandler===>特定异常信息：{}", exception.getMessage());
-
-        return Result.error(null, 500, exception.getMessage());
-    }
-
-    // 文件访问异常
-    @ExceptionHandler(AccessDeniedException.class)
-    @ResponseBody
-    public Result<String> error(AccessDeniedException exception) throws AccessDeniedException {
-        log.error("GlobalExceptionHandler===>文件访问异常：{}", exception.getMessage());
-
-        return Result.error(ResultCodeEnum.FAIL_NO_ACCESS_DENIED);
-    }
-
-    // 处理SQL异常
-    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
-    @ResponseBody
-    public Result<String> exceptionHandler(SQLIntegrityConstraintViolationException exception) {
-        log.error("GlobalExceptionHandler===>处理SQL异常:{}", exception.getMessage());
-
-        String message = exception.getMessage();
-        if (message.contains("Duplicate entry")) {
-            // 错误信息
-            return Result.error(ResultCodeEnum.USER_IS_EMPTY);
-        } else {
-            return Result.error(ResultCodeEnum.UNKNOWN_EXCEPTION);
-        }
+        // 给用户看模糊提示，绝对不要 return e.getMessage()
+        return Result.error(null, 500, DEFAULT_SERVER_ERROR_MSG);
     }
 }

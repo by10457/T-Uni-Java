@@ -19,6 +19,9 @@ public enum ResultCodeEnum {
     EMAIL_CODE_REFRESH(200, "邮箱验证码已刷新"),
     EMAIL_CODE_SEND_SUCCESS(200, "邮箱验证码已发送"),
 
+    // 参数错误 400
+    PARAM_ERROR(400, "参数错误"),
+
     // 验证错误 201
     USERNAME_OR_PASSWORD_NOT_EMPTY(201, "用户名或密码不能为空"),
     EMAIL_CODE_NOT_EMPTY(201, "邮箱验证码不能为空"),
