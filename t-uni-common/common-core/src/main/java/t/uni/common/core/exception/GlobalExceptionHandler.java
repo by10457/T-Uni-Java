@@ -45,8 +45,6 @@ public class GlobalExceptionHandler {
             return Result.error(ResultCodeEnum.FAIL_NO_ACCESS_DENIED);
         }
 
-        exception.printStackTrace();
-
         // 解析异常
         String jsonParseError = "JSON parse error (.*)";
         Matcher jsonParseErrorMatcher = Pattern.compile(jsonParseError).matcher(message);
@@ -65,7 +63,12 @@ public class GlobalExceptionHandler {
         String primaryKeyError = "Duplicate entry '(.*?)' for key .*";
         Matcher primaryKeyErrorMatcher = Pattern.compile(primaryKeyError).matcher(message);
         if (primaryKeyErrorMatcher.find()) {
-            return Result.error(null, 500, "[" + primaryKeyErrorMatcher.group(1) + "]已存在");
+            String duplicateValue = primaryKeyErrorMatcher.group(1);
+            // 判断是否是手机号格式（11位数字）
+            if (duplicateValue.matches("^\\d{11}$")) {
+                return Result.error(null, 500, "该手机号已经存在");
+            }
+            return Result.error(null, 500, "[" + duplicateValue + "]已存在");
         }
 
         // corn表达式错误
@@ -78,10 +81,11 @@ public class GlobalExceptionHandler {
         // MyBatis 异常处理（通过类名匹配，避免直接依赖）
         if (exceptionClassName.contains("MyBatisSystemException") ||
                 exceptionClassName.contains("PersistenceException")) {
+            log.error("MyBatis/Persistence 异常", exception);
             return Result.error(null, 500, "数据库异常");
         }
 
-        log.error("GlobalExceptionHandler===>运行时异常信息：{}", message);
+        log.error("GlobalExceptionHandler===>运行时异常信息：{}", message, exception);
         return Result.error(null, 500, message);
     }
 
