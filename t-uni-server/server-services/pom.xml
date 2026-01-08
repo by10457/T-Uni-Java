@@ -22,10 +22,10 @@
     </modules>
 
     <dependencies>
-        <!-- Server Core Common -->
+        <!-- Server Common -->
         <dependency>
             <groupId>t.uni</groupId>
-            <artifactId>server-core-common</artifactId>
+            <artifactId>server-common</artifactId>
         </dependency>
 
         <!-- MyBatis Plus -->

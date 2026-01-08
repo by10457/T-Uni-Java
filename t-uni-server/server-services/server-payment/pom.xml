@@ -17,10 +17,10 @@
     <description>Server支付服务：微信支付、支付回调、退款等</description>
 
     <dependencies>
-        <!-- Server Core Common -->
+        <!-- Server Common -->
         <dependency>
             <groupId>t.uni</groupId>
-            <artifactId>server-core-common</artifactId>
+            <artifactId>server-common</artifactId>
             <version>${t-uni.version}</version>
         </dependency>
     </dependencies>

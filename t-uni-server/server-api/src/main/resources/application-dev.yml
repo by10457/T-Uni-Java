@@ -7,9 +7,6 @@ logging:
     root: warn
   pattern:
     dateformat: HH:mm:ss:SSS
-  file:
-    path: "logs/${spring.application.name}"
-    name: "logs/${spring.application.name}"
 
 t.uni:
   master:
@@ -24,3 +21,7 @@ t.uni:
     port: 6379
     database: 0
     password: zxxyp
+
+  jwt:
+    # JWT 密钥（至少256位/32字节，用于HMAC-SHA算法）
+    secret: GSdmDwAdjR3QhexcGNQbKYGMMRHFZPjeGYfe47HhPSejMysFj3DfXHJZCjVhUzJkz4Fwm43UVUaY2mYCh8PHMbGybMtEkWBd53TUWK8mT4CUC8Jd6hCbAsxwB53ksvGV

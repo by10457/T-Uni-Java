@@ -1,15 +1,11 @@
-package t.uni.server.core.security;
+package t.uni.server.common.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import t.uni.server.core.utils.ServerJwtTokenUtil;
+import t.uni.server.common.utils.ServerJwtTokenUtil;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,15 +40,6 @@ public class TokenProvider {
      * 用于管理已注销或失效的token
      */
     private static final Map<String, Long> TOKEN_BLACKLIST = new ConcurrentHashMap<>();
-
-    /**
-     * 服务端密钥（从配置文件获取，支持多环境）
-     */
-    private final SecretKey serverKey;
-
-    public TokenProvider(@Value("${t.uni.server.jwt.secret:ZXCVBNM}") String secretKey) {
-        this.serverKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
-    }
 
     /**
      * 创建token

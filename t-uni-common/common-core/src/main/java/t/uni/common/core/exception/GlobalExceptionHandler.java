@@ -1,9 +1,7 @@
 package t.uni.common.core.exception;
 
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,6 +36,15 @@ public class GlobalExceptionHandler {
     public Result<Object> exceptionHandler(RuntimeException exception) {
         String message = exception.getMessage();
         message = StringUtils.hasText(message) ? message : "服务器异常";
+
+        // Spring Security 授权异常（通过类名匹配，避免直接依赖）
+        String exceptionClassName = exception.getClass().getName();
+        if (exceptionClassName.contains("AuthorizationDeniedException") ||
+                exceptionClassName.contains("AccessDeniedException")) {
+            log.warn("安全授权异常：{}", message);
+            return Result.error(ResultCodeEnum.FAIL_NO_ACCESS_DENIED);
+        }
+
         exception.printStackTrace();
 
         // 解析异常
@@ -69,7 +76,6 @@ public class GlobalExceptionHandler {
         }
 
         // MyBatis 异常处理（通过类名匹配，避免直接依赖）
-        String exceptionClassName = exception.getClass().getName();
         if (exceptionClassName.contains("MyBatisSystemException") ||
                 exceptionClassName.contains("PersistenceException")) {
             return Result.error(null, 500, "数据库异常");
@@ -98,20 +104,11 @@ public class GlobalExceptionHandler {
         return Result.error(null, 500, exception.getMessage());
     }
 
-    // spring security异常
+    // 文件访问异常
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseBody
     public Result<String> error(AccessDeniedException exception) throws AccessDeniedException {
-        log.error("GlobalExceptionHandler===>spring security异常：{}", exception.getMessage());
-
-        return Result.error(ResultCodeEnum.FAIL_NO_ACCESS_DENIED);
-    }
-
-    // spring security异常
-    @ExceptionHandler(AuthorizationDeniedException.class)
-    @ResponseBody
-    public Result<String> error(AuthorizationDeniedException exception) throws AccessDeniedException {
-        log.warn("AuthorizationDeniedException===>spring security异常：{}", exception.getMessage());
+        log.error("GlobalExceptionHandler===>文件访问异常：{}", exception.getMessage());
 
         return Result.error(ResultCodeEnum.FAIL_NO_ACCESS_DENIED);
     }

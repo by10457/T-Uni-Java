@@ -4,13 +4,12 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.util.StringUtils;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.ResultCodeEnum;
+import t.uni.common.core.security.JwtKeyHolder;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,12 +23,6 @@ import java.util.UUID;
  * </p>
  */
 public class JwtTokenUtil {
-
-    /**
-     * 默认密钥（生产环境建议通过配置注入）
-     */
-    private static final SecretKey DEFAULT_KEY = Keys.hmacShaKeyFor(
-            "T-Uni-Auth-Server-Private-SecretKey-2024".getBytes(StandardCharsets.UTF_8));
 
     /**
      * 默认过期时间：1天（毫秒）
@@ -74,7 +67,7 @@ public class JwtTokenUtil {
                 .claim("userId", userId)
                 .claim("username", username)
                 .id(UUID.randomUUID().toString())
-                .signWith(DEFAULT_KEY)
+                .signWith(getKey())
                 .compressWith(Jwts.ZIP.GZIP)
                 .compact();
     }
@@ -102,7 +95,7 @@ public class JwtTokenUtil {
                 .expiration(new Date(System.currentTimeMillis() + TOKEN_EXPIRATION_MS * days))
                 .claims(claims)
                 .id(UUID.randomUUID().toString())
-                .signWith(DEFAULT_KEY)
+                .signWith(getKey())
                 .compressWith(Jwts.ZIP.GZIP)
                 .compact();
     }
@@ -120,7 +113,7 @@ public class JwtTokenUtil {
                 .expiration(expireTime)
                 .claims(claims)
                 .id(UUID.randomUUID().toString())
-                .signWith(DEFAULT_KEY)
+                .signWith(getKey())
                 .compressWith(Jwts.ZIP.GZIP)
                 .compact();
     }
@@ -139,7 +132,7 @@ public class JwtTokenUtil {
                 .expiration(new Date(System.currentTimeMillis() + TOKEN_EXPIRATION_MS * days))
                 .claims(claims)
                 .id(UUID.randomUUID().toString())
-                .signWith(DEFAULT_KEY)
+                .signWith(getKey())
                 .compressWith(Jwts.ZIP.GZIP)
                 .compact();
     }
@@ -327,6 +320,18 @@ public class JwtTokenUtil {
     // ==================== 私有方法 ====================
 
     /**
+     * 获取 JWT 密钥
+     * <p>
+     * 从配置文件中读取的密钥（通过 JwtKeyHolder 管理）
+     * </p>
+     *
+     * @return JWT 密钥
+     */
+    private static SecretKey getKey() {
+        return JwtKeyHolder.getKey();
+    }
+
+    /**
      * 解析 token 获取 Claims
      *
      * @param token JWT token
@@ -338,7 +343,7 @@ public class JwtTokenUtil {
         }
         try {
             Jws<Claims> claimsJws = Jwts.parser()
-                    .verifyWith(DEFAULT_KEY)
+                    .verifyWith(getKey())
                     .build()
                     .parseSignedClaims(token);
             return claimsJws.getPayload();
