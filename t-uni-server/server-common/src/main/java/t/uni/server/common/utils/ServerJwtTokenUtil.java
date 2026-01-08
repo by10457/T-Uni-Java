@@ -143,6 +143,24 @@ public class ServerJwtTokenUtil {
     }
 
     /**
+     * 使用 Map 创建 token，指定过期时间
+     *
+     * @param claims     自定义声明
+     * @param expireTime 过期时间
+     * @return JWT token
+     */
+    public static String createTokenWithMap(Map<String, Object> claims, Date expireTime) {
+        return Jwts.builder()
+                .subject(DEFAULT_SUBJECT)
+                .expiration(expireTime)
+                .claims(claims)
+                .id(UUID.randomUUID().toString())
+                .signWith(getKey())
+                .compressWith(Jwts.ZIP.GZIP)
+                .compact();
+    }
+
+    /**
      * 创建双token（access token + refresh token）
      *
      * @param userId 用户ID

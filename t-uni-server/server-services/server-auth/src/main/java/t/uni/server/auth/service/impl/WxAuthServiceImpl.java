@@ -14,10 +14,10 @@ import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.server.auth.mapper.CoreUserMapper;
 import t.uni.server.auth.service.UserDefaultService;
 import t.uni.server.auth.service.WxAuthService;
-import t.uni.server.domain.auth.IBusinessUser;
-import t.uni.server.domain.auth.IBusinessUserMapper;
 import t.uni.server.common.auth.TokenService;
 import t.uni.server.common.config.WxAuthProperties;
+import t.uni.server.domain.auth.IBusinessUser;
+import t.uni.server.domain.auth.IBusinessUserMapper;
 import t.uni.server.domain.dto.auth.RefreshTokenDTO;
 import t.uni.server.domain.dto.auth.WxLoginDTO;
 import t.uni.server.domain.entity.CoreUser;
@@ -213,7 +213,7 @@ public class WxAuthServiceImpl implements WxAuthService {
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
             if (StrUtil.isBlank(unionId)) {
                 throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(),
-                    "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
+                        "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
             }
             log.info("使用 unionId 作为登录标识: {}", unionId);
             return unionId;
@@ -233,12 +233,12 @@ public class WxAuthServiceImpl implements WxAuthService {
         IBusinessUserMapper<IBusinessUser> mapper = (IBusinessUserMapper<IBusinessUser>) businessUserMapper;
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
             return mapper.selectOne(
-                Wrappers.lambdaQuery(IBusinessUser.class)
-                    .eq(IBusinessUser::getUnionId, loginIdentifier));
+                    Wrappers.lambdaQuery(IBusinessUser.class)
+                            .eq(IBusinessUser::getUnionId, loginIdentifier));
         } else {
             return mapper.selectOne(
-                Wrappers.lambdaQuery(IBusinessUser.class)
-                    .eq(IBusinessUser::getMaOpenId, loginIdentifier));
+                    Wrappers.lambdaQuery(IBusinessUser.class)
+                            .eq(IBusinessUser::getMaOpenId, loginIdentifier));
         }
     }
 }

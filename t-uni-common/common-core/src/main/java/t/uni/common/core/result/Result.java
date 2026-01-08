@@ -53,7 +53,7 @@ public class Result<T> {
         Result<T> result = build(body);
         result.setCode(code);
         result.setMessage(message);
-        result.setData(null);
+        result.setData(body);
         return result;
     }
 
@@ -119,7 +119,7 @@ public class Result<T> {
      * * 操作失败
      */
     public static <T> Result<T> error() {
-        return Result.build(null);
+        return Result.error(ResultCodeEnum.FAIL);
     }
 
     /**
@@ -168,6 +168,6 @@ public class Result<T> {
      * @param message 错误信息
      */
     public static <T> Result<T> error(T data, String message) {
-        return build(null, 500, message);
+        return build(data, 500, message);
     }
 }

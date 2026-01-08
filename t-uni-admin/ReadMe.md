@@ -53,6 +53,11 @@
 
 一个基于 Spring Security 6 的现代化动态权限控制系统，提供完整的 RBAC 权限管理解决方案。支持前后端分离架构，可灵活配置细粒度权限控制。
 
+## 🔌 本项目端口
+
+- 管理端（admin-api）：7840
+- 小程序端（server-api）：7850
+
 ## 😋控制器上注解说明
 
 整个项目是基于URL，方便定义权限接口，即使项目中接口不存在，通过URL的方式增删权限。
@@ -98,8 +103,10 @@
 > 1. 结构化特性 - 纯文本格式便于AI解析处理
 > 2. 高效翻译流程：
      >
+
 - 开发者只需完成中文版本
->    - 上传JSON文件至AI翻译工具
+
+> - 上传JSON文件至AI翻译工具
 >    - 简单指令即可批量生成英文/繁体中文/韩语等版本
 > 3. 显著节省开发时间 - 实现"一次编写，多语言适配"的高效工作流
 
@@ -119,12 +126,20 @@
 ### 路径匹配策略
 
 ```java
-public static String[] annotations = { ... };
+public static String[] annotations = { ...};
 
 // 配置示例
-http.authorizeHttpRequests(auth -> auth
-    .authorizeHttpRequests(authorize -> authorize
-    .requestMatchers(annotations).permitAll()
+        http.
+
+authorizeHttpRequests(auth ->auth
+        .
+
+authorizeHttpRequests(authorize ->authorize
+        .
+
+requestMatchers(annotations).
+
+permitAll()
 );
 ```
 

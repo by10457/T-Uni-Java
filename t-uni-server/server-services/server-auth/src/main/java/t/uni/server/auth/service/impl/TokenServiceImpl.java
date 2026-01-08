@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.redis.RedisUtil;
 import t.uni.common.core.result.ResultCodeEnum;
-import t.uni.common.core.utils.JwtTokenUtil;
 import t.uni.server.common.auth.TokenService;
+import t.uni.server.common.utils.ServerJwtTokenUtil;
 import t.uni.server.domain.constant.AuthConstant;
 import t.uni.server.domain.vo.auth.TokenVO;
 
@@ -39,7 +39,9 @@ public class TokenServiceImpl implements TokenService {
         claims.put(AuthConstant.CLAIM_OPEN_ID, openId);
 
         var accessTokenExpireTime = LocalDateTime.now().plusHours(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
-        var accessToken = JwtTokenUtil.createTokenWithMap(claims, Date.from(accessTokenExpireTime.atZone(ZoneId.systemDefault()).toInstant()));
+        var accessToken = ServerJwtTokenUtil.createTokenWithMap(
+                claims,
+                Date.from(accessTokenExpireTime.atZone(ZoneId.systemDefault()).toInstant()));
 
         // 2. 生成 Refresh Token（UUID）
         var refreshToken = UUID.randomUUID().toString().replace("-", "");
@@ -47,7 +49,15 @@ public class TokenServiceImpl implements TokenService {
 
         // 3. 存储 Refresh Token 到 Redis
         var redisKey = AuthConstant.REDIS_KEY_REFRESH_TOKEN + userId;
-        redisUtil.set(redisKey, refreshToken, AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS, TimeUnit.DAYS);
+        var tokenMeta = new HashMap<String, Object>();
+        tokenMeta.put(AuthConstant.REFRESH_TOKEN_FIELD_TOKEN, refreshToken);
+        if (openId != null && !openId.isBlank()) {
+            tokenMeta.put(AuthConstant.REFRESH_TOKEN_FIELD_OPEN_ID, openId);
+        }
+        redisUtil.hSetAll(redisKey, tokenMeta, TimeUnit.DAYS.toSeconds(AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS));
+
+        var tokenIndexKey = AuthConstant.REDIS_KEY_REFRESH_TOKEN_INDEX + refreshToken;
+        redisUtil.set(tokenIndexKey, String.valueOf(userId), AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS, TimeUnit.DAYS);
 
         log.info("为用户 {} 生成双Token成功", userId);
 
@@ -68,33 +78,31 @@ public class TokenServiceImpl implements TokenService {
             throw new BaseException(ResultCodeEnum.TOKEN_PARSING_FAILED.getCode(), "刷新令牌不能为空");
         }
 
-        // 1. 遍历 Redis 查找匹配的 Refresh Token（通过键值反查）
-        // 优化方案：实际生产中可使用双向映射，这里简化处理
-        var keys = redisUtil.keys(AuthConstant.REDIS_KEY_REFRESH_TOKEN + "*");
-        if (keys.isEmpty()) {
-            throw new BaseException(ResultCodeEnum.TOKEN_EXPIRED.getCode(), "刷新令牌已失效");
+        // 1. 通过反向索引定位 userId
+        var tokenIndexKey = AuthConstant.REDIS_KEY_REFRESH_TOKEN_INDEX + refreshToken;
+        var userIdValue = redisUtil.get(tokenIndexKey, String.class);
+        if (userIdValue == null || userIdValue.isBlank()) {
+            throw new BaseException(ResultCodeEnum.TOKEN_EXPIRED.getCode(), "刷新令牌已失效或不存在");
         }
+        var userId = Long.valueOf(userIdValue);
 
-        Long userId = null;
-        for (var key : keys) {
-            var storedToken = redisUtil.get(key);
-            if (refreshToken.equals(storedToken)) {
-                // 从 key 中提取 userId
-                userId = Long.valueOf(key.replace(AuthConstant.REDIS_KEY_REFRESH_TOKEN, ""));
-                break;
-            }
-        }
-
-        if (userId == null) {
+        // 2. 校验 Refresh Token 与用户缓存一致
+        var redisKey = AuthConstant.REDIS_KEY_REFRESH_TOKEN + userId;
+        var storedToken = redisUtil.hGet(redisKey, AuthConstant.REFRESH_TOKEN_FIELD_TOKEN);
+        if (storedToken == null || !refreshToken.equals(String.valueOf(storedToken))) {
             throw new BaseException(ResultCodeEnum.TOKEN_EXPIRED.getCode(), "刷新令牌已失效或不存在");
         }
 
-        // 2. 删除旧的 Refresh Token
-        redisUtil.delete(AuthConstant.REDIS_KEY_REFRESH_TOKEN + userId);
+        var openIdObj = redisUtil.hGet(redisKey, AuthConstant.REFRESH_TOKEN_FIELD_OPEN_ID);
+        var openId = openIdObj != null ? String.valueOf(openIdObj) : null;
+
+        // 3. 删除旧的 Refresh Token
+        redisUtil.delete(tokenIndexKey);
+        redisUtil.delete(redisKey);
 
         // 3. 生成新的双 Token
         log.info("用户 {} 刷新Token", userId);
-        return generateTokens(userId, null);
+        return generateTokens(userId, openId);
     }
 
     /**
@@ -107,11 +115,11 @@ public class TokenServiceImpl implements TokenService {
         }
 
         // 验证并解析 Token
-        if (!JwtTokenUtil.isValidAndNotExpired(accessToken)) {
+        if (!ServerJwtTokenUtil.isValid(accessToken) || ServerJwtTokenUtil.isExpired(accessToken)) {
             throw new BaseException(ResultCodeEnum.TOKEN_EXPIRED.getCode(), "访问令牌已过期或无效");
         }
 
-        return JwtTokenUtil.getUserId(accessToken);
+        return ServerJwtTokenUtil.getUserId(accessToken);
     }
 
     /**
@@ -120,6 +128,10 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public void invalidateRefreshToken(Long userId) {
         var redisKey = AuthConstant.REDIS_KEY_REFRESH_TOKEN + userId;
+        var storedToken = redisUtil.hGet(redisKey, AuthConstant.REFRESH_TOKEN_FIELD_TOKEN);
+        if (storedToken != null) {
+            redisUtil.delete(AuthConstant.REDIS_KEY_REFRESH_TOKEN_INDEX + storedToken);
+        }
         redisUtil.delete(redisKey);
         log.info("用户 {} 的刷新令牌已失效", userId);
     }

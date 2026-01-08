@@ -1,5 +1,4 @@
 .idea/
-init_sql/
 .vscode
 # 排除所有 .class 文件
 *.class

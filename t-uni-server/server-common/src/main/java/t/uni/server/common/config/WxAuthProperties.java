@@ -46,8 +46,8 @@ public class WxAuthProperties {
     public void validate() {
         if (!"MA_OPEN_ID".equals(loginIdentifier) && !"UNION_ID".equals(loginIdentifier)) {
             throw new IllegalArgumentException(
-                "Invalid loginIdentifier: " + loginIdentifier +
-                ". Must be 'MA_OPEN_ID' or 'UNION_ID'"
+                    "Invalid loginIdentifier: " + loginIdentifier +
+                            ". Must be 'MA_OPEN_ID' or 'UNION_ID'"
             );
         }
     }

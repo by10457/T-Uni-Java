@@ -24,7 +24,7 @@ public class SocialUser implements IBusinessUser, Serializable {
     /**
      * ID（主键，与 core_user 主键一致，需手动设置）
      */
-    @TableId(value = "id", type = IdType.INPUT)
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
     /**

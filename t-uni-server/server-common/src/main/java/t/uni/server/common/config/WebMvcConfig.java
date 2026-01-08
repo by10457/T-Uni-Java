@@ -20,6 +20,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // 注册认证拦截器
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/**") // 拦截所有请求
-                .excludePathPatterns("/auth/**", "/error", "/swagger-ui/**", "/v3/api-docs/**"); // 排除登录等路径
+                .excludePathPatterns(
+                        "/api/wx/auth/login",
+                        "/api/wx/auth/refreshToken",
+                        "/error",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"); // 排除登录等路径
     }
 }

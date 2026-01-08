@@ -8,13 +8,14 @@
 
 实现微信小程序完整登录流程：
 
-| 接口 | 功能 | 响应内容 |
-|-----|------|---------|
-| 登录/注册 | 微信 code 换取双 Token | 仅返回双 Token + 过期时间 |
-| Token 刷新 | refresh_token 换新 Token | 仅返回双 Token + 过期时间 |
-| 用户信息 | 查询当前用户详情 | userId、uniqueId、nickname、avatar、gender、isNewUser |
+| 接口       | 功能                     | 响应内容                                             |
+|----------|------------------------|--------------------------------------------------|
+| 登录/注册    | 微信 code 换取双 Token      | 仅返回双 Token + 过期时间                                |
+| Token 刷新 | refresh_token 换新 Token | 仅返回双 Token + 过期时间                                |
+| 用户信息     | 查询当前用户详情               | userId、uniqueId、nickname、avatar、gender、isNewUser |
 
 **关键决策**：
+
 - 复用 `social_user` 表（不新建 `social_user_wx`）
 - 通过**主键 id** 关联 `core_user` 和 `social_user`（使用 MyBatis-Plus UUID 生成）
 - 移除 Spring Security 依赖，使用自定义拦截器 + JWT
@@ -42,10 +43,10 @@
 
 ### 2.2 双 Token 机制
 
-| Token 类型 | 格式 | 有效期 | 存储 |
-|-----------|------|--------|------|
-| Access Token | JWT | 2小时 | 客户端 |
-| Refresh Token | UUID | 7天 | Redis + 客户端 |
+| Token 类型      | 格式   | 有效期 | 存储          |
+|---------------|------|-----|-------------|
+| Access Token  | JWT  | 2小时 | 客户端         |
+| Refresh Token | UUID | 7天  | Redis + 客户端 |
 
 ### 2.3 Redis Key 设计
 
@@ -118,58 +119,58 @@ Response: {
 
 #### Domain 层 (server-domain)
 
-| 文件 | 说明 |
-|-----|------|
-| `entity/CoreUser.java` | 核心用户实体（@TableId UUID） |
-| `entity/SocialUser.java` | 社交用户实体（@TableId UUID） |
-| `entity/CoreUserDefaultAvatar.java` | 默认头像实体 |
-| `entity/CoreUserDefaultNickName.java` | 默认昵称实体 |
-| `dto/auth/RefreshTokenDTO.java` | Token刷新请求 |
-| `vo/auth/TokenVO.java` | Token响应（登录/刷新共用） |
-| `vo/auth/UserInfoVO.java` | 用户信息响应 |
-| `constant/AuthConstant.java` | 认证常量 |
+| 文件                                    | 说明                    |
+|---------------------------------------|-----------------------|
+| `entity/CoreUser.java`                | 核心用户实体（@TableId UUID） |
+| `entity/SocialUser.java`              | 社交用户实体（@TableId UUID） |
+| `entity/CoreUserDefaultAvatar.java`   | 默认头像实体                |
+| `entity/CoreUserDefaultNickName.java` | 默认昵称实体                |
+| `dto/auth/RefreshTokenDTO.java`       | Token刷新请求             |
+| `vo/auth/TokenVO.java`                | Token响应（登录/刷新共用）      |
+| `vo/auth/UserInfoVO.java`             | 用户信息响应                |
+| `constant/AuthConstant.java`          | 认证常量                  |
 
 #### Service 层 (server-auth)
 
-| 文件 | 说明 |
-|-----|------|
-| `mapper/CoreUserMapper.java` | 核心用户Mapper |
-| `mapper/SocialUserMapper.java` | 社交用户Mapper |
-| `mapper/CoreUserDefaultAvatarMapper.java` | 默认头像Mapper |
+| 文件                                          | 说明         |
+|---------------------------------------------|------------|
+| `mapper/CoreUserMapper.java`                | 核心用户Mapper |
+| `mapper/SocialUserMapper.java`              | 社交用户Mapper |
+| `mapper/CoreUserDefaultAvatarMapper.java`   | 默认头像Mapper |
 | `mapper/CoreUserDefaultNickNameMapper.java` | 默认昵称Mapper |
-| `service/ITokenService.java` | Token服务接口 |
-| `service/impl/TokenServiceImpl.java` | Token服务实现 |
-| `service/IUserDefaultService.java` | 用户默认值服务接口 |
-| `service/impl/UserDefaultServiceImpl.java` | 用户默认值服务实现 |
-| `service/IUserInfoService.java` | 用户信息服务接口 |
-| `service/impl/UserInfoServiceImpl.java` | 用户信息服务实现 |
-| `util/WeightedRandomSelector.java` | 加权随机选择器 |
+| `service/ITokenService.java`                | Token服务接口  |
+| `service/impl/TokenServiceImpl.java`        | Token服务实现  |
+| `service/IUserDefaultService.java`          | 用户默认值服务接口  |
+| `service/impl/UserDefaultServiceImpl.java`  | 用户默认值服务实现  |
+| `service/IUserInfoService.java`             | 用户信息服务接口   |
+| `service/impl/UserInfoServiceImpl.java`     | 用户信息服务实现   |
+| `util/WeightedRandomSelector.java`          | 加权随机选择器    |
 
 #### API 层 (server-api)
 
-| 文件 | 说明 |
-|-----|------|
-| `controller/user/UserController.java` | 用户信息Controller |
-| `interceptor/AuthInterceptor.java` | 认证拦截器 |
-| `config/WebMvcConfig.java` | Web配置 |
-| `context/UserContext.java` | 用户上下文(ThreadLocal) |
+| 文件                                    | 说明                 |
+|---------------------------------------|--------------------|
+| `controller/user/UserController.java` | 用户信息Controller     |
+| `interceptor/AuthInterceptor.java`    | 认证拦截器              |
+| `config/WebMvcConfig.java`            | Web配置              |
+| `context/UserContext.java`            | 用户上下文(ThreadLocal) |
 
 ### 5.2 修改文件
 
-| 文件 | 修改内容 |
-|-----|---------|
-| `server-api/pom.xml` | 移除 spring-boot-starter-security 依赖 |
-| `WxAuthService.java` | 添加 refreshToken 方法声明 |
-| `WxAuthServiceImpl.java` | 重构登录逻辑，使用 core_user + social_user |
-| `WxAuthController.java` | 添加 refreshToken 接口 |
+| 文件                       | 修改内容                               |
+|--------------------------|------------------------------------|
+| `server-api/pom.xml`     | 移除 spring-boot-starter-security 依赖 |
+| `WxAuthService.java`     | 添加 refreshToken 方法声明               |
+| `WxAuthServiceImpl.java` | 重构登录逻辑，使用 core_user + social_user  |
+| `WxAuthController.java`  | 添加 refreshToken 接口                 |
 
 ### 5.3 删除文件
 
-| 文件 | 原因 |
-|-----|------|
-| `entity/ServerUser.java` | 改用 CoreUser + SocialUser |
-| `mapper/ServerUserMapper.java` | 改用新 Mapper |
-| `vo/auth/WxLoginVO.java` | 改用 TokenVO |
+| 文件                             | 原因                       |
+|--------------------------------|--------------------------|
+| `entity/ServerUser.java`       | 改用 CoreUser + SocialUser |
+| `mapper/ServerUserMapper.java` | 改用新 Mapper               |
+| `vo/auth/WxLoginVO.java`       | 改用 TokenVO               |
 
 ## 六、实现步骤
 
@@ -230,9 +231,12 @@ Response: {
 var totalWeight = items.stream().mapToInt(Item::getWeight).sum();
 var random = ThreadLocalRandom.current().nextInt(totalWeight);
 var cumulative = 0;
-for (var item : items) {
-    cumulative += item.getWeight();
-    if (random < cumulative) return item;
+for(
+var item :items){
+cumulative +=item.
+
+getWeight();
+    if(random<cumulative)return item;
 }
 ```
 
@@ -241,19 +245,21 @@ for (var item : items) {
 ```java
 // 在 UserInfoServiceImpl 中
 var isNewUser = ChronoUnit.MINUTES.between(
-    coreUser.getCreateTime(),
-    LocalDateTime.now()
-) <= 2;
+                coreUser.getCreateTime(),
+                LocalDateTime.now()
+        ) <= 2;
 ```
 
 ## 八、关键文件路径
 
 需要重点修改的现有文件：
+
 - `t-uni-server/server-api/pom.xml`
 - `t-uni-server/server-services/server-auth/src/main/java/t/uni/server/auth/service/impl/WxAuthServiceImpl.java`
 - `t-uni-server/server-api/src/main/java/t/uni/server/api/controller/auth/WxAuthController.java`
 
 参考的表结构文件：
+
 - `init_sql/core_user.sql`
 - `init_sql/social_user.sql`
 - `init_sql/core_user_default_avatar.sql`
