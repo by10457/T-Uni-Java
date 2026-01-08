@@ -1,5 +1,5 @@
 server:
-  port: 7850
+  port: 10457
   tomcat:
     threads:
       max: 1000

@@ -20,6 +20,7 @@ t.uni:
     password: zxxyp
 
   redis:
-    host: localhost
+    host: 192.168.2.111
     port: 6379
     database: 0
+    password: zxxyp
