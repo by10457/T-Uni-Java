@@ -1,0 +1,4 @@
+  `is_recommend` tinyint(1) DEFAULT '0' COMMENT '是否推荐：0否 1是',
+  去除，未用到
+
+  image_url -->  media_url
