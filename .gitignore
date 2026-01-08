@@ -1,1 +1,8 @@
 .idea/
+init_sql/
+.vscode
+# 排除所有 .class 文件
+*.class
+
+# 如果你使用了 Maven，排除整个 target 目录
+target/

@@ -19,7 +19,6 @@
     <modules>
         <module>server-common</module>
         <module>server-domain</module>
-        <module>server-core-common</module>
         <module>server-services</module>
         <module>server-api</module>
     </modules>

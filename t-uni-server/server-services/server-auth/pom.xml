@@ -17,11 +17,17 @@
     <description>Server认证服务：微信登录、手机号获取等</description>
 
     <dependencies>
-        <!-- Server Core Common -->
+        <!-- Server Common -->
         <dependency>
             <groupId>t.uni</groupId>
-            <artifactId>server-core-common</artifactId>
+            <artifactId>server-common</artifactId>
             <version>${t-uni.version}</version>
+        </dependency>
+
+        <!-- Spring Boot Starter Data Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
     </dependencies>
 

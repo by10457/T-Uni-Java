@@ -30,6 +30,24 @@
             <groupId>t.uni</groupId>
             <artifactId>common-web</artifactId>
         </dependency>
+
+        <!-- Server Domain -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>server-domain</artifactId>
+        </dependency>
+
+        <!-- JWT -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt</artifactId>
+        </dependency>
+
+        <!-- Hutool -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

@@ -27,16 +27,16 @@
             <artifactId>server-payment</artifactId>
         </dependency>
 
+        <!-- Server Common -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>server-common</artifactId>
+        </dependency>
+
         <!-- Spring Boot Starter Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- Spring Boot Starter Security -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
         <!-- Spring Boot Starter Data Redis -->

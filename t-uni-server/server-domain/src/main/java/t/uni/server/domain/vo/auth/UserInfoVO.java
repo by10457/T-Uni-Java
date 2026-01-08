@@ -7,14 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 微信登录返回VO
+ * 用户信息响应 VO
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "微信登录响应")
-public class WxLoginVO {
+@Schema(description = "用户信息响应")
+public class UserInfoVO {
 
     /**
      * 用户ID
@@ -23,16 +23,10 @@ public class WxLoginVO {
     private Long userId;
 
     /**
-     * 访问令牌
+     * 用户唯一ID（对外展示）
      */
-    @Schema(description = "访问令牌")
-    private String token;
-
-    /**
-     * openid
-     */
-    @Schema(description = "微信openid")
-    private String openid;
+    @Schema(description = "用户唯一ID")
+    private String uniqueId;
 
     /**
      * 昵称
@@ -41,10 +35,16 @@ public class WxLoginVO {
     private String nickname;
 
     /**
-     * 头像
+     * 头像URL
      */
     @Schema(description = "头像URL")
     private String avatar;
+
+    /**
+     * 性别 0:未知，1:男性，2:女性
+     */
+    @Schema(description = "性别 0:未知，1:男性，2:女性")
+    private Integer gender;
 
     /**
      * 是否新用户
