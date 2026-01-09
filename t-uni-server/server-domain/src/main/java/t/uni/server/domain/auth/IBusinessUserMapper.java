@@ -38,4 +38,32 @@ public interface IBusinessUserMapper<T extends IBusinessUser> extends BaseMapper
     default T findByUnionId(String unionId) {
         return selectOne(Wrappers.<T>query().eq("union_id", unionId));
     }
+
+    /**
+     * 插入业务用户
+     * <p>
+     * 该方法封装了泛型转换，避免在 Service 层出现未检查类型转换警告。
+     * 调用者传入 IBusinessUser 类型，内部转换为 T 进行插入。
+     * </p>
+     *
+     * @param user 业务用户实体
+     */
+    @SuppressWarnings("unchecked")
+    default void insertBusinessUser(IBusinessUser user) {
+        insert((T) user);
+    }
+
+    /**
+     * 根据 ID 更新业务用户
+     * <p>
+     * 该方法封装了泛型转换，避免在 Service 层出现未检查类型转换警告。
+     * 调用者传入 IBusinessUser 类型，内部转换为 T 进行更新。
+     * </p>
+     *
+     * @param user 业务用户实体
+     */
+    @SuppressWarnings("unchecked")
+    default void updateBusinessUserById(IBusinessUser user) {
+        updateById((T) user);
+    }
 }

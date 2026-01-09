@@ -61,27 +61,38 @@ public class WxAuthServiceImpl implements WxAuthService {
             log.info("微信登录成功，openId: {}, unionId: {}", openId, unionId);
 
             // 2. 根据配置选择登录标识
-            String loginIdentifier = getLoginIdentifier(openId, unionId);
+            var loginIdentifier = getLoginIdentifier(openId, unionId);
 
-            // 3. 查询业务用户是否存在
+            // 3. 先查缓存
+            var cachedToken = tokenService.getCachedToken(openId);
+            if (cachedToken != null) {
+                log.info("命中Token缓存，用户直接登录，openId: {}", openId);
+                return cachedToken;
+            }
+
+            // 4. 缓存未命中，查询业务用户是否存在
             IBusinessUser businessUser = queryBusinessUser(loginIdentifier);
 
             Long userId;
             if (businessUser == null) {
-                // 4. 新用户：创建 core_user 和业务用户
+                // 5. 新用户：创建 core_user 和业务用户
                 userId = createNewUser(openId, unionId);
                 log.info("创建新用户，openId: {}, userId: {}", openId, userId);
             } else {
-                // 5. 老用户：更新 unionId（如果有变化）
+                // 6. 老用户：更新 unionId
                 userId = businessUser.getId();
+                // todo
                 updateExistingUser(businessUser, unionId);
                 log.info("用户登录，userId: {}", userId);
             }
 
-            // 6. 更新最后登录时间
+            // 7. 更新最后登录时间
             updateLastLoginTime(userId);
 
-            // 7. 生成并返回双Token
+            // 8. 缓存用户信息
+            tokenService.cacheUserInfo(openId, userId, unionId);
+
+            // 9. 生成并返回双Token
             return tokenService.generateTokens(userId, openId);
 
         } catch (WxErrorException e) {
@@ -166,7 +177,7 @@ public class WxAuthServiceImpl implements WxAuthService {
         socialUser.setUnionId(unionId);
         socialUser.setStatus(1);
 
-        ((IBusinessUserMapper<IBusinessUser>) businessUserMapper).insert(socialUser);
+        businessUserMapper.insertBusinessUser(socialUser);
 
         return coreUser.getId();
     }
@@ -174,11 +185,11 @@ public class WxAuthServiceImpl implements WxAuthService {
     /**
      * 更新已存在用户的信息
      */
-    @SuppressWarnings("unchecked")
     private void updateExistingUser(IBusinessUser businessUser, String unionId) {
+        // 如果unionId和新的不一样，就更新 unionId
         if (StrUtil.isNotBlank(unionId) && !unionId.equals(businessUser.getUnionId())) {
             businessUser.setUnionId(unionId);
-            ((IBusinessUserMapper<IBusinessUser>) businessUserMapper).updateById(businessUser);
+            businessUserMapper.updateBusinessUserById(businessUser);
 
             // 同步更新 core_user 的 unionId
             var coreUser = coreUserMapper.selectById(businessUser.getId());
@@ -211,8 +222,7 @@ public class WxAuthServiceImpl implements WxAuthService {
     private String getLoginIdentifier(String openId, String unionId) {
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
             if (StrUtil.isBlank(unionId)) {
-                throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(),
-                        "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
+                throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(), "当前小程序配置为 UNION_ID 登录，但未获取到 unionId，请检查小程序是否已绑定开放平台");
             }
             log.info("使用 unionId 作为登录标识: {}", unionId);
             return unionId;

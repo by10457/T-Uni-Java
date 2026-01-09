@@ -24,5 +24,5 @@ description: 在 T-Uni-Java 仓库进行后端开发、接口调整、实体/Map
 - Controller/Service/Mapper/Entity/DTO/VO/异常规范与示例：`references/standards.md`。
 - **API 路径前缀规范（端标识、业务模块划分）：`references/api-prefix.md`**。
 - 数据库命名、逻辑删除与时间字段规则：`references/db.md`。
-- 小程序登录/双 Token：`references/wechat-login.md` 并对照 `WX_LOGIN_PLAN.md`。
+- 小程序登录/双 Token：`references/wechat-login.md`（全新重构版，Python 风格两层缓存）。
 - 构建或运行命令：`references/commands.md`。

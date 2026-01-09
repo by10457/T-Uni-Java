@@ -35,7 +35,7 @@ public class JwtTokenUtil {
     private static final int DEFAULT_EXPIRE_DAYS = 7;
 
     /**
-     * 默认主题
+     * 默认业务
      */
     private static final String DEFAULT_SUBJECT = "T-Uni";
 
@@ -44,12 +44,18 @@ public class JwtTokenUtil {
     /**
      * 根据用户ID和用户名创建 token（默认7天过期）
      *
-     * @param userId   用户ID
-     * @param username 用户名
+     * @param userId 用户ID
      * @return JWT token
      */
-    public static String createToken(Long userId, String username) {
-        return createToken(userId, username, DEFAULT_EXPIRE_DAYS);
+    public static String createToken(Long userId, Integer days) {
+        return Jwts.builder()
+                .subject(DEFAULT_SUBJECT)
+                .expiration(new Date(System.currentTimeMillis() + TOKEN_EXPIRATION_MS * days))
+                .claim("userId", userId)
+                .id(UUID.randomUUID().toString())
+                .signWith(getKey())
+                .compressWith(Jwts.ZIP.GZIP)
+                .compact();
     }
 
     /**

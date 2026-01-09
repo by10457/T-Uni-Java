@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class JwtKeyHolder {
 
     /**
-     * 静态密钥字段（使用 AtomicReference 确保线程安全，兼容 JDK 17+）
+     * 静态密钥字段（使用 AtomicReference 确保线程安全）
      */
     private static final AtomicReference<SecretKey> KEY = new AtomicReference<>();
 
@@ -35,14 +35,12 @@ public class JwtKeyHolder {
 
         // 校验密钥是否配置
         if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException(
-                    "JWT密钥未配置：请在配置文件中设置 t.uni.jwt.secret（至少256位/32字节）");
+            throw new IllegalStateException("JWT密钥未配置：请在配置文件中设置 t.uni.jwt.secret（至少256位/32字节）");
         }
 
         // 校验密钥长度
         if (secret.length() < 32) {
-            throw new IllegalStateException(
-                    "JWT密钥长度不足：必须至少32字节（256位），当前长度：" + secret.length());
+            throw new IllegalStateException("JWT密钥长度不足：必须至少32字节（256位），当前长度：" + secret.length());
         }
 
         // 创建密钥对象并设置到静态字段
@@ -55,7 +53,7 @@ public class JwtKeyHolder {
     /**
      * 获取 JWT 密钥（静态方法）
      * <p>
-     * 供静态工具类（JwtTokenUtil、ServerJwtTokenUtil）使用
+     * 供静态工具类 JwtTokenUtil 使用
      * </p>
      *
      * @return JWT 密钥
@@ -63,8 +61,7 @@ public class JwtKeyHolder {
     public static SecretKey getKey() {
         SecretKey key = KEY.get();
         if (key == null) {
-            throw new IllegalStateException(
-                    "JWT密钥未初始化：请确保 JwtKeyHolder 已被 Spring 加载");
+            throw new IllegalStateException("JWT密钥未初始化：请确保 JwtKeyHolder 已被加载");
         }
         return key;
     }
