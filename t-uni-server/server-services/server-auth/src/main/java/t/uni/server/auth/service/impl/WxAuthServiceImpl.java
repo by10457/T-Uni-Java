@@ -81,8 +81,8 @@ public class WxAuthServiceImpl implements WxAuthService {
             } else {
                 // 6. 老用户：更新 unionId
                 userId = businessUser.getId();
-                // todo
-                updateExistingUser(businessUser, unionId);
+                // maOpenId和unionId热插拔
+                updateExistingUser(businessUser, getLoginIdentifier(openId, unionId));
                 log.info("用户登录，userId: {}", userId);
             }
 
