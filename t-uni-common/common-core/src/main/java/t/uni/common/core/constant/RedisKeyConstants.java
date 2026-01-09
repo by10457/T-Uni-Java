@@ -71,6 +71,16 @@ public final class RedisKeyConstants {
      */
     public static final long TOKEN_EXPIRE_MS = TOKEN_EXPIRE_DAYS * 24 * 60 * 60 * 1000L;
 
+    /**
+     * Token 续期阈值（天），在此时间内过期会自动续期
+     */
+    public static final int TOKEN_REFRESH_THRESHOLD_DAYS = 1;
+
+    /**
+     * Token 续期阈值（毫秒）
+     */
+    public static final long TOKEN_REFRESH_THRESHOLD_MS = TOKEN_REFRESH_THRESHOLD_DAYS * 24 * 60 * 60 * 1000L;
+
     private RedisKeyConstants() {
         // 禁止实例化
     }

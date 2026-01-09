@@ -6,7 +6,6 @@ import t.uni.server.domain.vo.auth.TokenVO;
  * Token 服务接口
  * <p>
  * 负责双 Token（Access Token + Refresh Token）的生成、验证和刷新
- * 同时支持 Python 风格的两层缓存策略
  * </p>
  */
 public interface TokenService {

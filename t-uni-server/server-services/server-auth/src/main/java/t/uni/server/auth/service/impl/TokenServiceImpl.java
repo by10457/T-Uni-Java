@@ -149,6 +149,7 @@ public class TokenServiceImpl implements TokenService {
 
     /**
      * 从缓存获取有效 Token（Python 风格）
+     * 支持自动续期：当 Token 即将过期或已过期时，自动生成新的 Token
      */
     @Override
     public TokenVO getCachedToken(String openId) {
@@ -160,26 +161,50 @@ public class TokenServiceImpl implements TokenService {
 
         // 2. 获取 Token 缓存 (Redis Hash)
         String tokenKey = RedisKeyConstants.wxUserToken(userId);
-        Map<Object, Object> tokenDataRaw = redisUtil.hGetAll(tokenKey);
+        var tokenDataRaw = redisUtil.hGetAll(tokenKey);
 
         if (tokenDataRaw == null || tokenDataRaw.isEmpty()) {
             return null;
         }
 
-        // 3. 检查是否过期
-        Object expireTimeObj = tokenDataRaw.get("expireTimeMs");
-        if (expireTimeObj == null) return null;
-        
-        long expireTimeMs = expireTimeObj instanceof Number ? ((Number) expireTimeObj).longValue() : Long.parseLong(String.valueOf(expireTimeObj));
-        
-        if (System.currentTimeMillis() > expireTimeMs) {
-            log.info("用户 {} 的Token缓存已过期", userId);
-            // todo 继续生成两个token
+        // 3. 获取过期时间
+        var expireTimeObj = tokenDataRaw.get("expireTimeMs");
+        if (expireTimeObj == null) {
             return null;
         }
 
-        // 4. 计算剩余秒数
-        long remainingSeconds = (expireTimeMs - System.currentTimeMillis()) / 1000;
+        long expireTimeMs = expireTimeObj instanceof Number ?
+                ((Number) expireTimeObj).longValue() : Long.parseLong(String.valueOf(expireTimeObj));
+
+        // 4. 获取 openId（用于续期）
+        var openIdFromCache = tokenDataRaw.get("openId");
+        if (openIdFromCache == null) {
+            return null;
+        }
+
+        long currentTimeMs = System.currentTimeMillis();
+        long remainingMs = expireTimeMs - currentTimeMs;
+
+        // 5. 判断是否需要续期（已过期或剩余时间小于阈值）
+        boolean needsRefresh = remainingMs < RedisKeyConstants.TOKEN_REFRESH_THRESHOLD_MS;
+
+        if (needsRefresh) {
+            // Token 已过期或即将过期，自动续期
+            if (remainingMs <= 0) {
+                log.info("用户 {} 的Token已过期，自动续期", userId);
+            } else {
+                log.info("用户 {} 的Token即将过期（剩余 {} ms），自动续期", userId, remainingMs);
+            }
+
+            // 直接基于 userId 重新生成双 Token（不需要查库）
+            return generateTokens(userId, openIdFromCache);
+        }
+
+        // 6. Token 未过期且剩余时间充足，直接返回缓存的 Token
+        log.info("用户 {} 的Token仍然有效（剩余 {} ms），直接使用缓存", userId, remainingMs);
+
+        // 7. 计算剩余秒数
+        long remainingSeconds = remainingMs / 1000;
 
         return TokenVO.builder()
                 .accessToken((String) tokenDataRaw.get("accessToken"))
