@@ -50,8 +50,9 @@ public class RedisConfiguration {
         redisTemplate.setValueSerializer(jsonRedisSerializer());
         redisTemplate.setHashValueSerializer(jsonRedisSerializer());
 
-        // 开启Redis事务
-        redisTemplate.setEnableTransactionSupport(true);
+        // 注意：不启用 Redis 事务支持
+        // 原因：启用后，在 Spring @Transactional 方法中，setIfAbsent 等命令会返回 null
+        // redisTemplate.setEnableTransactionSupport(true);
         return redisTemplate;
     }
 

@@ -1,7 +1,33 @@
 .idea/
 .vscode
+# Eclipse/STS
+.project
+.classpath
+.settings/
+.factorypath
 # 排除所有 .class 文件
 *.class
 **/.codex/
+**/.gemini/
+**/.agent/
+**/.cursor/
 # 如果你使用了 Maven，排除整个 target 目录
 target/
+
+# 日志文件
+logs/
+*.log
+
+# 测试图片目录
+test_picture/
+
+# Python 虚拟环境
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 测试临时文件
+.token_cache
+*.iml

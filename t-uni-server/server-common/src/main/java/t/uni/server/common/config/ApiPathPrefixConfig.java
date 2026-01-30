@@ -26,10 +26,16 @@ public class ApiPathPrefixConfig implements WebMvcConfigurer {
      * 配置路径匹配规则
      * <p>
      * 所有 @RequestMapping 的路径都会自动加上 api.prefix 前缀
+     * 排除 springdoc/swagger 相关的 Controller
      * </p>
      */
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
-        configurer.addPathPrefix(apiPrefix, clazz -> true);
+        configurer.addPathPrefix(apiPrefix, clazz -> {
+            var packageName = clazz.getPackageName();
+            // 排除 springdoc 和 swagger 相关的 Controller
+            return !packageName.startsWith("org.springdoc")
+                    && !packageName.startsWith("io.swagger");
+        });
     }
 }

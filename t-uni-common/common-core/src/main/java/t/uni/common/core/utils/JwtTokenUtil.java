@@ -59,6 +59,25 @@ public class JwtTokenUtil {
     }
 
     /**
+     * 根据用户ID创建 token，指定过期小时数
+     *
+     * @param userId 用户ID
+     * @param hours  过期小时数
+     * @return JWT token
+     */
+    public static String createTokenWithHours(Long userId, Integer hours) {
+        long expirationMs = hours * 60 * 60 * 1000L;
+        return Jwts.builder()
+                .subject(DEFAULT_SUBJECT)
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .claim("userId", userId)
+                .id(UUID.randomUUID().toString())
+                .signWith(getKey())
+                .compressWith(Jwts.ZIP.GZIP)
+                .compact();
+    }
+
+    /**
      * 根据用户ID和用户名创建 token，指定过期天数
      *
      * @param userId   用户ID

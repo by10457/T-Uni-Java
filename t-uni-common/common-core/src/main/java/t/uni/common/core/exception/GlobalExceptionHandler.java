@@ -7,6 +7,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -67,13 +68,36 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 2.2 必传参数缺失异常 (@RequestParam 缺失)
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public Result<Object> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException e) {
+        String message = e.getParameterName() + "不能为空";
+        log.warn("必传参数缺失: {}", message);
+        return Result.error(null, ResultCodeEnum.PARAM_ERROR.getCode(), message);
+    }
+
+    /**
+     * 2.3 数字格式异常 (ID 字段超出 Long 范围)
+     * <p>
+     * 当前端传入的字符串 ID 超出 Long.MAX_VALUE 时，Long.valueOf() 会抛出此异常。
+     * 统一返回参数格式错误，避免 500。
+     */
+    @ExceptionHandler(NumberFormatException.class)
+    public Result<Object> handleNumberFormatException(NumberFormatException e) {
+        log.warn("数字格式错误: {}", e.getMessage());
+        return Result.error(null, ResultCodeEnum.PARAM_ERROR.getCode(), "ID格式无效");
+    }
+
+    /**
      * 3. 请求体格式错误 (如 JSON 语法错误)
      * 说明：这就代替了原来的 "JSON parse error" 正则匹配
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public Result<Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("请求体读取失败: {}", e.getMessage());
-        return Result.error(null, 500, "请求参数格式错误，请检查JSON格式");
+        return Result.error(null, ResultCodeEnum.PARAM_ERROR.getCode(), "请求参数格式错误，请检查JSON格式");
     }
 
     /**

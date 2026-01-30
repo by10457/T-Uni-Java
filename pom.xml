@@ -26,9 +26,9 @@
     </modules>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <java.version>17</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- 统一版本管理 - 升级到最新稳定版本 -->
@@ -53,6 +53,7 @@
         <pagehelper.version>6.1.0</pagehelper.version>
         <velocity.version>2.2</velocity.version>
         <velocity-tools.version>3.1</velocity-tools.version>
+        <qiniu-sdk.version>7.15.0</qiniu-sdk.version>
     </properties>
 
     <dependencyManagement>
@@ -268,6 +269,13 @@
                 <groupId>org.seleniumhq.selenium</groupId>
                 <artifactId>selenium-java</artifactId>
                 <version>4.30.0</version>
+            </dependency>
+
+            <!-- 七牛云 SDK -->
+            <dependency>
+                <groupId>com.qiniu</groupId>
+                <artifactId>qiniu-java-sdk</artifactId>
+                <version>${qiniu-sdk.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

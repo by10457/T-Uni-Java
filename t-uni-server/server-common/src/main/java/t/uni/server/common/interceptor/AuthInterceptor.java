@@ -33,7 +33,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         // 1. 获取 Authorization 请求头
         var authHeader = request.getHeader(AuthConstant.HEADER_AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith(AuthConstant.TOKEN_PREFIX)) {
-            throw new BaseException(ResultCodeEnum.TOKEN_PARSING_FAILED.getCode(), "未提供有效的认证信息");
+            throw new BaseException(ResultCodeEnum.TOKEN_NOT_PROVIDED);
         }
 
         // 2. 提取 Token

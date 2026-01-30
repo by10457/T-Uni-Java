@@ -1,6 +1,12 @@
 server:
   port: 7840
 
+# Knife4j 配置（enable: false 解决与 Spring Boot 3.5.x 兼容性问题）
+knife4j:
+  enable: false
+  setting:
+    language: zh_cn
+
 logging:
   level:
     t.uni.service.mapper: info

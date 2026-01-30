@@ -26,6 +26,14 @@ public final class RedisKeyConstants {
      */
     public static final String WX_USER_TOKEN = "wx:token:{}";
 
+    /**
+     * RefreshToken 反向索引（通过 refreshToken 查询 userId）
+     * 格式: wx:refresh:{refreshToken}
+     * 存储: String，值为 userId
+     * 过期: 永不过期
+     */
+    public static final String WX_REFRESH_TOKEN = "wx:refresh:{}";
+
     // ==================== Admin 端 - 用户登录相关 ====================
 
     /**
@@ -99,6 +107,13 @@ public final class RedisKeyConstants {
      */
     public static String wxUserToken(Long userId) {
         return WX_USER_TOKEN.replace("{}", String.valueOf(userId));
+    }
+
+    /**
+     * 获取 RefreshToken 反向索引 Key
+     */
+    public static String wxRefreshToken(String refreshToken) {
+        return WX_REFRESH_TOKEN.replace("{}", refreshToken);
     }
 
     /**

@@ -97,7 +97,7 @@ public class WxAuthServiceImpl implements WxAuthService {
 
         } catch (WxErrorException e) {
             log.error("微信登录失败，code: {}, error: {}", code, e.getMessage(), e);
-            throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(), "微信登录失败：" + e.getMessage());
+            throw new BaseException(ResultCodeEnum.WX_LOGIN_FAILED.getCode(), "微信登录失败：" + e.getMessage());
         }
     }
 
@@ -134,7 +134,7 @@ public class WxAuthServiceImpl implements WxAuthService {
 
         } catch (WxErrorException e) {
             log.error("获取手机号失败，userId: {}, error: {}", userId, e.getMessage(), e);
-            throw new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(), "获取手机号失败：" + e.getMessage());
+            throw new BaseException(ResultCodeEnum.WX_GET_PHONE_FAILED.getCode(), "获取手机号失败：" + e.getMessage());
         }
     }
 

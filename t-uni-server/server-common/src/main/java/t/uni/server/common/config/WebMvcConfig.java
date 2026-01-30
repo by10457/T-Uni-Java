@@ -25,7 +25,19 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/**/auth/refreshToken",
                         "/health/**",
                         "/error",
+                        "/api/storage/callback",
+                        "/**/storage/callback",
+
+                        // Knife4j 文档
+                        "/doc.html",
+                        "/doc.html/**",
+                        "/swagger-ui.html",
                         "/swagger-ui/**",
-                        "/v3/api-docs/**"); // 排除登录等路径
+                        "/swagger-resources",
+                        "/swagger-resources/**",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/webjars/**",
+                        "/favicon.ico");
     }
 }

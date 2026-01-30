@@ -1,5 +1,6 @@
 package t.uni.common.core.result;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,11 +9,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Result<T> {
-    // 状态码
+
+    @Schema(description = "* 状态码")
     private Integer code;
-    // 返回消息
+
+    @Schema(description = "* 返回消息")
     private String message;
-    // 返回数据
+
+    @Schema(description = "* 返回数据")
     private T data;
 
     /**
@@ -95,13 +99,13 @@ public class Result<T> {
     }
 
     /**
-     * * 操作失败-自定义返回数据和状态码
+     * * 操作成功-自定义返回数据和消息
      *
      * @param data    返回体
-     * @param message 错误信息
+     * @param message 消息
      */
     public static <T> Result<T> success(T data, String message) {
-        return build(data, 200, message);
+        return build(data, ResultCodeEnum.SUCCESS.getCode(), message);
     }
 
     /**
@@ -162,12 +166,12 @@ public class Result<T> {
     }
 
     /**
-     * * 操作失败-自定义返回数据和状态码
+     * * 操作失败-自定义返回数据和消息
      *
      * @param data    返回体
      * @param message 错误信息
      */
     public static <T> Result<T> error(T data, String message) {
-        return build(data, 500, message);
+        return build(data, ResultCodeEnum.FAIL.getCode(), message);
     }
 }
