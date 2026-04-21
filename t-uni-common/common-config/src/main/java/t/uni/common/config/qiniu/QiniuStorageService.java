@@ -1,5 +1,6 @@
 package t.uni.common.config.qiniu;
 
+import com.qiniu.http.Headers;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
 import lombok.RequiredArgsConstructor;
@@ -9,9 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.UUID;
 
 /**
  * 七牛云存储服务
@@ -29,37 +27,38 @@ public class QiniuStorageService {
     private final QiniuProperties properties;
 
     /**
-     * 生成自定义文件 Key
+     * 生成通用上传凭证（不指定 key，允许上传任意文件到 bucket）
      * <p>
-     * 格式: upload/{userId}/{yyyyMMdd}/{uuid}.{ext}
+     * 适用于批量上传场景，前端自行控制文件名。
+     * 一个 Token 可复用上传多张图片。
      *
-     * @param userId 用户 ID
-     * @param ext    文件扩展名（如 jpg、png）
-     * @return 文件 Key
-     */
-    public String generateFileKey(Long userId, String ext) {
-        String dateStr = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-        String uuid = UUID.randomUUID().toString().replace("-", "");
-        return String.format("upload/%d/%s/%s.%s", userId, dateStr, uuid, ext);
-    }
-
-    /**
-     * 生成带回调的上传凭证
-     *
-     * @param fileKey 文件 Key
      * @return 上传凭证 Token
      */
-    public String generateUploadToken(String fileKey) {
+    public String generateBucketToken() {
         StringMap putPolicy = new StringMap();
         putPolicy.put("callbackUrl", properties.getCallbackUrl());
         putPolicy.put("callbackBody",
-                "{\"key\":\"$(key)\",\"hash\":\"$(etag)\",\"bucket\":\"$(bucket)\",\"fsize\":$(fsize),\"mimeType\":\"$(mimeType)\",\"width\":$(imageInfo.width),\"height\":$(imageInfo.height)}");
+                "{\"key\":\"$(key)\",\"hash\":\"$(etag)\",\"bucket\":\"$(bucket)\"," +
+                "\"fsize\":$(fsize),\"mimeType\":\"$(mimeType)\"," +
+                "\"width\":$(imageInfo.width),\"height\":$(imageInfo.height)}");
         putPolicy.put("callbackBodyType", "application/json");
+        putPolicy.put("mimeLimit", "image/*");  // 限制只能上传图片
+        putPolicy.put("fsizeLimit", 15 * 1024 * 1024);  // 限制 15MB
 
-        String token = auth.uploadToken(properties.getBucket(), fileKey, properties.getTokenExpireSeconds(), putPolicy);
+        // scope 只指定 bucket，不指定 key，允许上传任意文件
+        String token = auth.uploadToken(properties.getBucket(), null, properties.getTokenExpireSeconds(), putPolicy);
 
-        log.debug("生成上传凭证，fileKey: {}", fileKey);
+        log.debug("生成通用上传凭证");
         return token;
+    }
+
+    /**
+     * 获取 Token 过期时间戳（秒）
+     *
+     * @return Unix 时间戳（秒）
+     */
+    public long getTokenExpiresAt() {
+        return System.currentTimeMillis() / 1000 + properties.getTokenExpireSeconds();
     }
 
     /**
@@ -70,12 +69,14 @@ public class QiniuStorageService {
      * @return 是否合法
      */
     public boolean verifyCallback(String authHeader, byte[] callbackBody) {
-        // application/json 时，签名不包括请求内容
-        boolean valid = auth.isValidCallback(
-                authHeader,
-                properties.getCallbackUrl(),
-                callbackBody,
-                "application/json");
+        // 构建回调请求对象
+        var headers = new Headers.Builder()
+                .add(Auth.HTTP_HEADER_KEY_CONTENT_TYPE, "application/json")
+                .build();
+        var request = new Auth.Request(properties.getCallbackUrl(), "POST", headers, callbackBody);
+
+        // 验证签名
+        boolean valid = auth.isValidCallback(authHeader, request);
 
         if (!valid) {
             log.warn("七牛云回调签名验证失败");
