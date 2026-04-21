@@ -1,0 +1,37 @@
+server:
+  port: ${SERVER_PORT:10457}
+
+logging:
+  level:
+    t.uni.server: ${T_UNI_SERVER_LOG_LEVEL:info}
+    root: ${ROOT_LOG_LEVEL:warn}
+
+t.uni:
+  master:
+    host: ${T_UNI_DB_HOST:localhost}
+    port: ${T_UNI_DB_PORT:3306}
+    database: ${T_UNI_DB_NAME:tuni}
+    username: ${T_UNI_DB_USERNAME:root}
+    password: ${T_UNI_DB_PASSWORD:}
+
+  redis:
+    host: ${T_UNI_REDIS_HOST:localhost}
+    port: ${T_UNI_REDIS_PORT:6379}
+    database: ${T_UNI_REDIS_DATABASE:0}
+    password: ${T_UNI_REDIS_PASSWORD:}
+
+  jwt:
+    secret: ${T_UNI_JWT_SECRET:}
+
+wx:
+  miniapp:
+    appid: ${WX_MINIAPP_APPID:}
+    secret: ${WX_MINIAPP_SECRET:}
+    token: ${WX_MINIAPP_TOKEN:}
+    aesKey: ${WX_MINIAPP_AES_KEY:}
+    msgDataFormat: ${WX_MINIAPP_MSG_DATA_FORMAT:JSON}
+
+  auth:
+    login-identifier: ${WX_AUTH_LOGIN_IDENTIFIER:MA_OPEN_ID}
+
+# Qiniu is optional. Only add qiniu.* properties when you actually enable Qiniu.

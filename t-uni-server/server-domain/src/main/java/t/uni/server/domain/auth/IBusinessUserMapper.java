@@ -5,8 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 /**
  * 业务用户通用Mapper接口
- * 所有业务场景的Mapper都应继承此接口
- * 支持不同业务场景使用不同的Mapper实现（如 SocialUserMapper、EduUserMapper、HygieneUserMapper）
+ * 所有业务场景的 Mapper 都应继承此接口。
  *
  * @param <T> 业务用户实体类型，必须实现 IBusinessUser 接口
  * @author lzx

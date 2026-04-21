@@ -44,14 +44,14 @@ knife4j:
 
 t.uni:
   master:
-    host: 192.168.3.98
-    port: 3306
-    database: auth_admin
-    username: root
-    password: "123456"
+    host: ${T_UNI_ADMIN_DB_HOST:localhost}
+    port: ${T_UNI_ADMIN_DB_PORT:3306}
+    database: ${T_UNI_ADMIN_DB_NAME:tuni_admin}
+    username: ${T_UNI_ADMIN_DB_USERNAME:root}
+    password: ${T_UNI_ADMIN_DB_PASSWORD:change_me}
 
   redis:
-    host: 192.168.3.98
-    port: 6379
-    database: 0
-    password: "123456"
+    host: ${T_UNI_ADMIN_REDIS_HOST:localhost}
+    port: ${T_UNI_ADMIN_REDIS_PORT:6379}
+    database: ${T_UNI_ADMIN_REDIS_DATABASE:0}
+    password: ${T_UNI_ADMIN_REDIS_PASSWORD:}

@@ -1,6 +1,5 @@
 package t.uni.server.common.config;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
@@ -16,7 +15,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @since 2026-01-09
  */
 @Configuration
-@RequiredArgsConstructor
 public class ApiPathPrefixConfig implements WebMvcConfigurer {
 
     @Value("${api.prefix:}")
@@ -31,11 +29,7 @@ public class ApiPathPrefixConfig implements WebMvcConfigurer {
      */
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
-        configurer.addPathPrefix(apiPrefix, clazz -> {
-            var packageName = clazz.getPackageName();
-            // 排除 springdoc 和 swagger 相关的 Controller
-            return !packageName.startsWith("org.springdoc")
-                    && !packageName.startsWith("io.swagger");
-        });
+        configurer.addPathPrefix(apiPrefix,
+                clazz -> clazz.getPackageName().startsWith("t.uni.server.api.controller"));
     }
 }

@@ -25,8 +25,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/**/auth/refreshToken",
                         "/health/**",
                         "/error",
-                        "/api/storage/callback",
-                        "/**/storage/callback",
 
                         // Knife4j 文档
                         "/doc.html",

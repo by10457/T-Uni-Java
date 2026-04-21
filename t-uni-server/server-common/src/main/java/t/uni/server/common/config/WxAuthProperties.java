@@ -25,20 +25,6 @@ public class WxAuthProperties {
     private String loginIdentifier = "MA_OPEN_ID";
 
     /**
-     * 业务用户实体类的完全限定名
-     * 例如：t.uni.server.domain.entity.SocialUser
-     * 用于日志和错误提示
-     */
-    private String businessUserClass = "t.uni.server.domain.entity.SocialUser";
-
-    /**
-     * 业务用户Mapper的完全限定名
-     * 例如：t.uni.server.auth.mapper.SocialUserMapper
-     * 用于日志和错误提示
-     */
-    private String businessUserMapperClass = "t.uni.server.auth.mapper.SocialUserMapper";
-
-    /**
      * 验证配置的有效性
      *
      * @throws IllegalArgumentException 如果配置无效

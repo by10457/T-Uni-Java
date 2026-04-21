@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 /**
  * 核心用户实体
- * 与 social_user 通过主键 id 一对一关联
+ * 与业务用户表通过主键 id 一对一关联
  */
 @Data
 @TableName("core_user")

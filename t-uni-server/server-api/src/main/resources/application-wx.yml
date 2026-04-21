@@ -1,42 +1,10 @@
 wx:
   miniapp:
-    # 微信小程序AppID
     appid: ${WX_MINIAPP_APPID:}
-    # 微信小程序AppSecret（建议通过环境变量注入）
     secret: ${WX_MINIAPP_SECRET:}
-    # Token（用于消息加解密，可选）
     token: ${WX_MINIAPP_TOKEN:}
-    # EncodingAESKey（用于消息加解密，可选）
     aesKey: ${WX_MINIAPP_AES_KEY:}
-    # 消息格式，JSON或XML
     msgDataFormat: JSON
 
-  pay:
-    # 微信支付AppID（与小程序AppID相同）
-    appId: ${WX_PAY_APPID:your_appid_here}
-    # 商户号
-    mchId: ${WX_PAY_MCH_ID:your_mch_id_here}
-    # 商户密钥（API v2）
-    mchKey: ${WX_PAY_MCH_KEY:your_mch_key_here}
-    # API v3密钥
-    apiV3Key: ${WX_PAY_API_V3_KEY:your_api_v3_key_here}
-    # 证书路径（用于退款等操作）
-    certPath: ${WX_PAY_CERT_PATH:classpath:cert/apiclient_cert.p12}
-    # 支付回调通知URL
-    notifyUrl: ${WX_PAY_NOTIFY_URL:https://your-domain.com/api/payment/notify}
-    # 退款回调通知URL
-    refundNotifyUrl: ${WX_PAY_REFUND_NOTIFY_URL:https://your-domain.com/api/payment/refund-notify}
-
-  # 微信认证配置
   auth:
-    # 登录标识类型
-    # MA_OPEN_ID: 使用 maOpenId 作为唯一标识（场景A：未申请unionId）
     login-identifier: ${WX_AUTH_LOGIN_IDENTIFIER:MA_OPEN_ID}
-
-    # UNION_ID: 使用 unionId 作为唯一标识（场景B：已申请unionId，同一主体下多个小程序共享用户）
-    # login-identifier: ${WX_AUTH_LOGIN_IDENTIFIER:UNION_ID}
-
-    # 业务用户实体类的完全限定名（用于日志和错误提示）
-    business-user-class: ${WX_AUTH_BUSINESS_USER_CLASS:t.uni.server.domain.entity.SocialUser}
-    # 业务用户Mapper的完全限定名（用于日志和错误提示）
-    business-user-mapper-class: ${WX_AUTH_BUSINESS_USER_MAPPER_CLASS:t.uni.server.auth.mapper.SocialUserMapper}

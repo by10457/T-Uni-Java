@@ -25,20 +25,20 @@ logging:
 
 t.uni:
   master:
-    host: 192.168.2.111
-    port: 3306
-    database: wxy
-    username: root
-    password: zxxyp
+    host: ${T_UNI_ADMIN_DB_HOST:localhost}
+    port: ${T_UNI_ADMIN_DB_PORT:3306}
+    database: ${T_UNI_ADMIN_DB_NAME:tuni_admin}
+    username: ${T_UNI_ADMIN_DB_USERNAME:root}
+    password: ${T_UNI_ADMIN_DB_PASSWORD:change_me}
 
   redis:
-    host: 192.168.2.111
-    port: 6379
-    database: zxxyp
+    host: ${T_UNI_ADMIN_REDIS_HOST:localhost}
+    port: ${T_UNI_ADMIN_REDIS_PORT:6379}
+    database: ${T_UNI_ADMIN_REDIS_DATABASE:0}
+    password: ${T_UNI_ADMIN_REDIS_PASSWORD:}
 
   jwt:
-    # JWT 密钥（至少256位/32字节，用于HMAC-SHA算法）
-    secret: GSdmDwAdjR3QhexcGNQbKYGMMRHFZPjeGYfe47HhPSejMysFj3DfXHJZCjVhUzJkz4Fwm43UVUaY2mYCh8PHMbGybMtEkWBd53TUWK8mT4CUC8Jd6hCbAsxwB53ksvGV
+    secret: ${T_UNI_ADMIN_JWT_SECRET:replace_with_a_64_byte_secret_in_real_env}
 
 dromara:
   local-plus:
@@ -46,12 +46,11 @@ dromara:
     domain: /api/local-file
     # 访问路径，使用本地在SpringSecurity中要配置权限，如果是和我一样就不用修改了，如果不是api开头，上线需要配置nginx
     path-patterns: /api/local-file/**
-    storage-path: D:/Temp/ # 存储路径
-    # storage-path: ~/t-uni-admin/temp # 存储路径
+    storage-path: ${T_UNI_ADMIN_LOCAL_STORAGE_PATH:/tmp/t-uni-admin/}
     base-path: "" # 基础路径
   minio:
-    endpointUrl: "http://192.168.3.137:9000" # 连接地址
-    accessKey: uni # 用户名
-    secretKey: "12345678" # 登录密码
-    bucket-name: auth-admin # 指定哪个桶
+    endpointUrl: ${T_UNI_ADMIN_MINIO_ENDPOINT:http://localhost:9000}
+    accessKey: ${T_UNI_ADMIN_MINIO_ACCESS_KEY:}
+    secretKey: ${T_UNI_ADMIN_MINIO_SECRET_KEY:}
+    bucket-name: ${T_UNI_ADMIN_MINIO_BUCKET:tuni-admin}
     base-path: "" # 基础路径

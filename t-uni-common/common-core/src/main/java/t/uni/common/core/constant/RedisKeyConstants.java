@@ -60,6 +60,12 @@ public final class RedisKeyConstants {
      */
     public static final String ADMIN_USER_PERMISSION = "user:permission:{}";
 
+    /**
+     * 七牛下载地址缓存
+     * 格式: qiniu:download:url:{cacheId}
+     */
+    public static final String QINIU_DOWNLOAD_URL = "qiniu:download:url:{}";
+
     // ==================== 通用 ====================
 
     /**
@@ -142,5 +148,12 @@ public final class RedisKeyConstants {
      */
     public static String adminUserPermission(String username) {
         return ADMIN_USER_PERMISSION.replace("{}", username);
+    }
+
+    /**
+     * 获取七牛下载地址缓存 Key
+     */
+    public static String qiniuDownloadUrl(String cacheId) {
+        return QINIU_DOWNLOAD_URL.replace("{}", cacheId);
     }
 }

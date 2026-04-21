@@ -7,7 +7,7 @@ server:
 
 spring:
   profiles:
-    active: @profiles.active@
+    active: ${SPRING_PROFILES_ACTIVE:dev}
     include:
       - wx  # 引入微信配置
   threads:

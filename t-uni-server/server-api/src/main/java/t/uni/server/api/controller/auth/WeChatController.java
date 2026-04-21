@@ -8,8 +8,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.Result;
+import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.server.auth.service.WxAuthService;
+import t.uni.server.common.context.UserContext;
 import t.uni.server.domain.dto.auth.GetPhoneDTO;
 
 /**
@@ -26,7 +29,11 @@ public class WeChatController {
     @Operation(summary = "获取手机号", description = "获取用户手机号")
     @PostMapping("/getPhone")
     public Result<String> getPhone(@Valid @RequestBody GetPhoneDTO dto) {
-        var phone = wxAuthService.getPhoneNumber(dto.getCode(), dto.getUserId());
+        var userId = UserContext.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCodeEnum.LOGIN_AUTH);
+        }
+        var phone = wxAuthService.getPhoneNumber(dto.getCode(), userId);
         return Result.success(phone);
     }
 }

@@ -1,15 +1,28 @@
 package t.uni.common.config.qiniu;
 
 import com.qiniu.http.Headers;
+import com.qiniu.http.Response;
+import com.qiniu.storage.Configuration;
+import com.qiniu.storage.Region;
+import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
+import t.uni.common.core.constant.RedisKeyConstants;
+import t.uni.common.core.exception.BaseException;
+import t.uni.common.core.redis.RedisUtil;
+import t.uni.common.core.result.ResultCodeEnum;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.HexFormat;
+import java.util.stream.Collectors;
 
 /**
  * 七牛云存储服务
@@ -25,6 +38,13 @@ public class QiniuStorageService {
 
     private final Auth auth;
     private final QiniuProperties properties;
+    private final RedisUtil redisUtil;
+    private UploadManager uploadManager;
+
+    @PostConstruct
+    public void init() {
+        this.uploadManager = new UploadManager(new Configuration(Region.autoRegion()));
+    }
 
     /**
      * 生成通用上传凭证（不指定 key，允许上传任意文件到 bucket）
@@ -36,20 +56,29 @@ public class QiniuStorageService {
      */
     public String generateBucketToken() {
         StringMap putPolicy = new StringMap();
-        putPolicy.put("callbackUrl", properties.getCallbackUrl());
-        putPolicy.put("callbackBody",
-                "{\"key\":\"$(key)\",\"hash\":\"$(etag)\",\"bucket\":\"$(bucket)\"," +
-                "\"fsize\":$(fsize),\"mimeType\":\"$(mimeType)\"," +
-                "\"width\":$(imageInfo.width),\"height\":$(imageInfo.height)}");
-        putPolicy.put("callbackBodyType", "application/json");
-        putPolicy.put("mimeLimit", "image/*");  // 限制只能上传图片
-        putPolicy.put("fsizeLimit", 15 * 1024 * 1024);  // 限制 15MB
+        if (properties.getCallbackUrl() != null && !properties.getCallbackUrl().isBlank()) {
+            putPolicy.put("callbackUrl", properties.getCallbackUrl());
+            putPolicy.put("callbackBody",
+                    "{\"key\":\"$(key)\",\"hash\":\"$(etag)\",\"bucket\":\"$(bucket)\"," +
+                            "\"fsize\":$(fsize),\"mimeType\":\"$(mimeType)\"," +
+                            "\"width\":$(imageInfo.width),\"height\":$(imageInfo.height)}");
+            putPolicy.put("callbackBodyType", "application/json");
+        }
+        putPolicy.put("mimeLimit", "image/*");
+        putPolicy.put("fsizeLimit", 15 * 1024 * 1024);
+        return auth.uploadToken(properties.getBucket(), null, properties.getTokenExpireSeconds(), putPolicy);
+    }
 
-        // scope 只指定 bucket，不指定 key，允许上传任意文件
-        String token = auth.uploadToken(properties.getBucket(), null, properties.getTokenExpireSeconds(), putPolicy);
-
-        log.debug("生成通用上传凭证");
-        return token;
+    /**
+     * 头像上传令牌：绑定 fileKey，限制为图片且禁止覆盖。
+     */
+    public String generateAvatarUploadToken(String fileKey) {
+        var normalizedKey = normalizeFileKey(fileKey);
+        StringMap putPolicy = new StringMap();
+        putPolicy.put("mimeLimit", "image/*");
+        putPolicy.put("fsizeLimit", 15 * 1024 * 1024);
+        putPolicy.put("insertOnly", 1);
+        return auth.uploadToken(properties.getBucket(), normalizedKey, properties.getTokenExpireSeconds(), putPolicy);
     }
 
     /**
@@ -61,6 +90,14 @@ public class QiniuStorageService {
         return System.currentTimeMillis() / 1000 + properties.getTokenExpireSeconds();
     }
 
+    public String getUploadHost() {
+        return properties.getUploadHost();
+    }
+
+    public String getDomain() {
+        return properties.getDomain();
+    }
+
     /**
      * 验证七牛云回调签名
      *
@@ -69,31 +106,171 @@ public class QiniuStorageService {
      * @return 是否合法
      */
     public boolean verifyCallback(String authHeader, byte[] callbackBody) {
-        // 构建回调请求对象
         var headers = new Headers.Builder()
                 .add(Auth.HTTP_HEADER_KEY_CONTENT_TYPE, "application/json")
                 .build();
         var request = new Auth.Request(properties.getCallbackUrl(), "POST", headers, callbackBody);
-
-        // 验证签名
         boolean valid = auth.isValidCallback(authHeader, request);
-
         if (!valid) {
             log.warn("七牛云回调签名验证失败");
         }
-
         return valid;
     }
 
     /**
-     * 生成私有空间下载链接
-     *
-     * @param fileKey 文件 Key
-     * @return 带签名的下载 URL
+     * 服务端直接上传字节数组到七牛云。
+     */
+    public void uploadBytes(String fileKey, byte[] bytes, String mimeType) {
+        var normalizedKey = normalizeFileKey(fileKey);
+        if (bytes == null || bytes.length == 0) {
+            throw new BaseException(ResultCodeEnum.UPLOAD_BYTES_EMPTY);
+        }
+        Response response = null;
+        try {
+            response = uploadManager.put(bytes, normalizedKey, auth.uploadToken(properties.getBucket(), normalizedKey), null, mimeType, false);
+            if (response == null || !response.isOK()) {
+                throw new BaseException(ResultCodeEnum.UPLOAD_ERROR.getCode(),
+                        "七牛上传失败，status=" + (response == null ? -1 : response.statusCode));
+            }
+            log.info("七牛上传成功: key={}, size={}bytes", normalizedKey, bytes.length);
+        } catch (Exception e) {
+            if (e instanceof BaseException baseException) {
+                throw baseException;
+            }
+            log.error("七牛上传失败: key={}, error={}", normalizedKey, e.getMessage(), e);
+            throw new BaseException(ResultCodeEnum.SERVICE_ERROR);
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+        }
+    }
+
+    public long getDownloadExpireSeconds() {
+        return useTimestampSignedUrl()
+                ? properties.getCdnTimestampExpireSeconds()
+                : properties.getDownloadExpireSeconds();
+    }
+
+    /**
+     * 生成下载链接。
      */
     public String generateDownloadUrl(String fileKey) {
-        String encodedKey = URLEncoder.encode(fileKey, StandardCharsets.UTF_8).replace("+", "%20");
-        String publicUrl = String.format("%s/%s", properties.getDomain(), encodedKey);
-        return auth.privateDownloadUrl(publicUrl, properties.getDownloadExpireSeconds());
+        var normalizedKey = normalizeFileKey(fileKey);
+        var encodedKey = encodePathPreserveSlash(normalizedKey);
+        var domain = trimTrailingSlash(properties.getDomain());
+        var expireSeconds = getDownloadExpireSeconds();
+        var useTimestamp = useTimestampSignedUrl();
+
+        if (!properties.isDownloadUrlCacheEnabled()) {
+            return useTimestamp
+                    ? buildTimestampSignedUrl(domain, encodedKey, expireSeconds)
+                    : auth.privateDownloadUrl(domain + "/" + encodedKey, expireSeconds);
+        }
+
+        var signerVersion = useTimestamp
+                ? sha256Hex("ts|" + nullToEmpty(properties.getCdnTimestampKey()))
+                : sha256Hex("private|" + nullToEmpty(properties.getAccessKey()) + "|" + nullToEmpty(properties.getSecretKey()));
+        var cacheId = sha256Hex((useTimestamp ? "ts" : "private") + "|" + signerVersion + "|" + domain + "|" + normalizedKey + "|" + expireSeconds);
+        var cacheKey = RedisKeyConstants.qiniuDownloadUrl(cacheId);
+        var cachedUrl = getCachedDownloadUrl(cacheKey);
+        if (cachedUrl != null) {
+            log.debug("命中七牛下载链接缓存: key={}", normalizedKey);
+            return cachedUrl;
+        }
+
+        var signedUrl = useTimestamp
+                ? buildTimestampSignedUrl(domain, encodedKey, expireSeconds)
+                : auth.privateDownloadUrl(domain + "/" + encodedKey, expireSeconds);
+        cacheDownloadUrl(cacheKey, signedUrl, expireSeconds);
+        return signedUrl;
+    }
+
+    private String encodePathPreserveSlash(String path) {
+        return Arrays.stream(path.split("/", -1))
+                .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8).replace("+", "%20"))
+                .collect(Collectors.joining("/"));
+    }
+
+    private String normalizeFileKey(String fileKey) {
+        if (fileKey == null || fileKey.isBlank()) {
+            throw new BaseException(ResultCodeEnum.FILE_KEY_EMPTY);
+        }
+        var normalized = fileKey.trim();
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+        if (normalized.isBlank()) {
+            throw new BaseException(ResultCodeEnum.FILE_KEY_EMPTY);
+        }
+        return normalized;
+    }
+
+    private String trimTrailingSlash(String domain) {
+        if (domain == null) {
+            return "";
+        }
+        var normalized = domain.trim();
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String getCachedDownloadUrl(String cacheKey) {
+        try {
+            var cached = redisUtil.get(cacheKey);
+            if (cached instanceof String url && !url.isBlank()) {
+                return url;
+            }
+        } catch (Exception e) {
+            log.warn("读取七牛下载链接缓存失败: cacheKey={}, error={}", cacheKey, e.getMessage());
+        }
+        return null;
+    }
+
+    private void cacheDownloadUrl(String cacheKey, String signedUrl, long expireSeconds) {
+        try {
+            long ttlSeconds = expireSeconds - Math.max(0, properties.getDownloadUrlCacheRefreshAheadSeconds());
+            if (ttlSeconds > 0) {
+                redisUtil.set(cacheKey, signedUrl, ttlSeconds);
+            }
+        } catch (Exception e) {
+            log.warn("写入七牛下载链接缓存失败: cacheKey={}, error={}", cacheKey, e.getMessage());
+        }
+    }
+
+    private boolean useTimestampSignedUrl() {
+        return properties.getCdnTimestampKey() != null && !properties.getCdnTimestampKey().isBlank();
+    }
+
+    private String buildTimestampSignedUrl(String domain, String encodedPath, long expireSeconds) {
+        long deadline = System.currentTimeMillis() / 1000 + expireSeconds;
+        String timestamp = Long.toHexString(deadline).toLowerCase();
+        String path = "/" + encodedPath;
+        String sign = md5Hex(properties.getCdnTimestampKey() + path + timestamp);
+        String privateUrl = auth.privateDownloadUrl(domain + path, expireSeconds);
+        return privateUrl + "&sign=" + sign + "&t=" + timestamp;
+    }
+
+    private String md5Hex(String input) {
+        return digestHex("MD5", input);
+    }
+
+    private String sha256Hex(String input) {
+        return digestHex("SHA-256", input);
+    }
+
+    private String digestHex(String algorithm, String input) {
+        try {
+            var digest = MessageDigest.getInstance(algorithm);
+            return HexFormat.of().formatHex(digest.digest(input.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new IllegalStateException("计算七牛签名失败", e);
+        }
     }
 }

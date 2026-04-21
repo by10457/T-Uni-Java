@@ -102,6 +102,10 @@ public enum ResultCodeEnum {
     FAIL(5003, "失败"),
     WX_LOGIN_FAILED(5004, "微信登录失败"),
     WX_GET_PHONE_FAILED(5005, "获取手机号失败"),
+
+    // ==================== 存储错误 5100-5199 ====================
+    FILE_KEY_EMPTY(5101, "文件标识不能为空"),
+    UPLOAD_BYTES_EMPTY(5102, "上传内容不能为空"),
     ;
 
     private final Integer code;

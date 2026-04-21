@@ -70,12 +70,6 @@
                 <artifactId>common-config</artifactId>
                 <version>${t-uni.version}</version>
             </dependency>
-            <dependency>
-                <groupId>t.uni</groupId>
-                <artifactId>common-web</artifactId>
-                <version>${t-uni.version}</version>
-            </dependency>
-
             <!-- Admin模块 -->
             <dependency>
                 <groupId>t.uni</groupId>

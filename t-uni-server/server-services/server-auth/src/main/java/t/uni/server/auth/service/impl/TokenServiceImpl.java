@@ -10,6 +10,7 @@ import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.redis.RedisUtil;
 import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.common.core.utils.JwtTokenUtil;
+import t.uni.common.core.utils.MaskUtil;
 import t.uni.server.auth.mapper.CoreUserMapper;
 import t.uni.server.common.auth.TokenService;
 import t.uni.server.domain.constant.AuthConstant;
@@ -125,12 +126,18 @@ public class TokenServiceImpl implements TokenService {
             throw new BaseException(ResultCodeEnum.ACCESS_TOKEN_EMPTY);
         }
 
-        // 使用 JwtTokenUtil 验证并解析
         if (!JwtTokenUtil.isValidAndNotExpired(accessToken)) {
             throw new BaseException(ResultCodeEnum.ACCESS_TOKEN_INVALID);
         }
 
-        return JwtTokenUtil.getUserId(accessToken);
+        var userId = JwtTokenUtil.getUserId(accessToken);
+        var cachedAccessToken = redisUtil.hGet(RedisKeyConstants.wxUserToken(userId), "accessToken");
+        var requestToken = normalizeTokenForCompare(accessToken);
+        var currentToken = normalizeTokenForCompare(cachedAccessToken == null ? null : String.valueOf(cachedAccessToken));
+        if (StrUtil.isBlank(currentToken) || !requestToken.equals(currentToken)) {
+            throw new BaseException(ResultCodeEnum.ACCESS_TOKEN_INVALID);
+        }
+        return userId;
     }
 
     @Override
@@ -150,51 +157,54 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public TokenVO getCachedToken(String openId) {
-        // 1. 先获取用户ID
         var userId = getCachedUserId(openId);
         if (userId == null) {
             return null;
         }
+        if (!isUserAvailable(userId)) {
+            log.warn("检测到无效登录缓存，自动清理并回落重登流程，openId={}, userId={}",
+                    MaskUtil.maskOpenId(openId), userId);
+            clearLoginCache(openId, userId);
+            return null;
+        }
 
-        // 2. 获取 Token 缓存 (Redis Hash)
         var tokenKey = RedisKeyConstants.wxUserToken(userId);
         var tokenDataRaw = redisUtil.hGetAll(tokenKey);
 
         if (CollUtil.isEmpty(tokenDataRaw)) {
+            redisUtil.delete(RedisKeyConstants.wxUserInfo(openId));
             return null;
         }
 
-        // 3. 获取 RefreshToken 过期时间
         var refreshExpireTimeObj = tokenDataRaw.get("refreshExpireTimeMs");
         if (refreshExpireTimeObj == null) {
+            clearLoginCache(openId, userId);
             return null;
         }
 
         long refreshExpireTimeMs = refreshExpireTimeObj instanceof Number ?
                 ((Number) refreshExpireTimeObj).longValue() : Long.parseLong(String.valueOf(refreshExpireTimeObj));
 
-        // 4. 获取 openId（用于续期）
         var openIdFromCache = tokenDataRaw.get("openId");
         if (openIdFromCache == null) {
+            clearLoginCache(openId, userId);
             return null;
         }
 
         long currentTimeMs = System.currentTimeMillis();
         long refreshRemainingMs = refreshExpireTimeMs - currentTimeMs;
 
-        // 5. RefreshToken 已过期，返回 null
         if (refreshRemainingMs <= 0) {
             log.info("用户 {} 的RefreshToken已过期，需要重新登录", userId);
+            clearLoginCache(openId, userId);
             return null;
         }
 
-        // 6. 检查 AccessToken 是否已过期
         var accessExpireTimeObj = tokenDataRaw.get("accessExpireTimeMs");
         long accessExpireTimeMs = accessExpireTimeObj instanceof Number ?
                 ((Number) accessExpireTimeObj).longValue() : Long.parseLong(String.valueOf(accessExpireTimeObj));
         long accessRemainingMs = accessExpireTimeMs - currentTimeMs;
 
-        // 7. 判断是否需要续期：RefreshToken 即将过期 或 AccessToken 已过期
         boolean refreshNeedsRenew = refreshRemainingMs < RedisKeyConstants.TOKEN_REFRESH_THRESHOLD_MS;
         boolean accessExpired = accessRemainingMs <= 0;
 
@@ -205,11 +215,22 @@ public class TokenServiceImpl implements TokenService {
                 log.info("用户 {} 的RefreshToken即将过期（剩余 {} ms），自动续期", userId, refreshRemainingMs);
             }
             updateLastLoginTime(userId);
-            // 直接基于 userId 重新生成双 Token（不需要查库）
             return generateTokens(userId, String.valueOf(openIdFromCache));
         }
 
-        // 8. 双Token均有效，返回缓存的Token
+        var accessTokenObj = tokenDataRaw.get("accessToken");
+        if (accessTokenObj == null || StrUtil.isBlank(String.valueOf(accessTokenObj))) {
+            log.warn("用户 {} 缓存 accessToken 为空，重新生成双Token", userId);
+            updateLastLoginTime(userId);
+            return generateTokens(userId, String.valueOf(openIdFromCache));
+        }
+        var accessToken = String.valueOf(accessTokenObj);
+        if (!JwtTokenUtil.isValidAndNotExpired(accessToken)) {
+            log.warn("用户 {} 缓存 accessToken 在当前服务下无效，重新生成双Token", userId);
+            updateLastLoginTime(userId);
+            return generateTokens(userId, String.valueOf(openIdFromCache));
+        }
+
         long accessExpiresIn = TimeUnit.HOURS.toSeconds(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
         long refreshExpiresIn = TimeUnit.DAYS.toSeconds(AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS);
 
@@ -217,7 +238,7 @@ public class TokenServiceImpl implements TokenService {
                 userId, accessRemainingMs / 1000, refreshRemainingMs / 1000);
 
         return TokenVO.builder()
-                .accessToken((String) tokenDataRaw.get("accessToken"))
+                .accessToken(accessToken)
                 .refreshToken((String) tokenDataRaw.get("refreshToken"))
                 .accessExpiresIn(accessExpiresIn)
                 .refreshExpiresIn(refreshExpiresIn)
@@ -367,5 +388,34 @@ public class TokenServiceImpl implements TokenService {
         // 建立反向索引
         var indexKey = RedisKeyConstants.wxRefreshToken(tokenVO.getRefreshToken());
         redisUtil.set(indexKey, String.valueOf(userId));
+    }
+
+    private boolean isUserAvailable(Long userId) {
+        var coreUser = coreUserMapper.selectById(userId);
+        if (coreUser == null) {
+            return false;
+        }
+        return !Integer.valueOf(1).equals(coreUser.getIsDestroy())
+                && !Integer.valueOf(1).equals(coreUser.getIsDisable());
+    }
+
+    private void clearLoginCache(String openId, Long userId) {
+        if (userId == null) {
+            redisUtil.delete(RedisKeyConstants.wxUserInfo(openId));
+            return;
+        }
+        var tokenKey = RedisKeyConstants.wxUserToken(userId);
+        var refreshTokenObj = redisUtil.hGet(tokenKey, "refreshToken");
+        if (refreshTokenObj != null) {
+            redisUtil.delete(RedisKeyConstants.wxRefreshToken(String.valueOf(refreshTokenObj)));
+        }
+        redisUtil.delete(tokenKey, RedisKeyConstants.wxUserInfo(openId));
+    }
+
+    private String normalizeTokenForCompare(String token) {
+        if (token == null) {
+            return "";
+        }
+        return StrUtil.removeAll(token.trim(), "\"");
     }
 }

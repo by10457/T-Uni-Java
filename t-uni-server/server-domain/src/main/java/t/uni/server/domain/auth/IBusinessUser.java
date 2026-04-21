@@ -4,8 +4,7 @@ import java.io.Serializable;
 
 /**
  * 业务用户通用接口
- * 所有业务场景的用户实体都应实现此接口
- * 支持不同业务场景使用不同的实体类（如 SocialUser、EduUser、HygieneUser）
+ * 所有业务场景的用户实体都应实现此接口。
  *
  * @author lzx
  * @since 2026-01-08
@@ -87,19 +86,4 @@ public interface IBusinessUser extends Serializable {
      */
     void setUnionId(String unionId);
 
-    /**
-     * 获取状态
-     * 0: 未关注
-     * 1: 已关注
-     *
-     * @return 状态
-     */
-    Integer getStatus();
-
-    /**
-     * 设置状态
-     *
-     * @param status 状态
-     */
-    void setStatus(Integer status);
 }
