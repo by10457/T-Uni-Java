@@ -1,0 +1,4 @@
+interface:
+  display_name: "T-Uni Java"
+  short_description: "在 T-Uni-Java 仓库内进行模板开发与结构约束"
+  default_prompt: "使用 $t-uni-java 在这个仓库中新增或重构后端代码，并保持模板边界不被破坏。"
