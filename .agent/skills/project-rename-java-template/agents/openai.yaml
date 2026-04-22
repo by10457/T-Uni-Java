@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目改名模板"
+  short_description: "结构化处理 Java 模板项目改名、包名与模块迁移"
+  default_prompt: "使用 $project-rename-java-template 按完整映射表安全地重命名这个 Java 模板项目。"
