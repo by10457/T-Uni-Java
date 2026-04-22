@@ -12,11 +12,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
-import t.uni.common.core.constant.RedisKeyConstants;
 import t.uni.common.core.exception.BaseException;
-import t.uni.common.core.redis.RedisUtil;
+import t.uni.common.config.redis.RedisUtil;
 import t.uni.common.core.result.ResultCodeEnum;
 
+import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -147,18 +148,82 @@ public class QiniuStorageService {
     }
 
     public long getDownloadExpireSeconds() {
+        if (isPublicAccessPolicy()) {
+            return properties.getDownloadExpireSeconds();
+        }
         return useTimestampSignedUrl()
                 ? properties.getCdnTimestampExpireSeconds()
                 : properties.getDownloadExpireSeconds();
     }
 
     /**
-     * 生成下载链接。
+     * 生成下载链接（使用全局 accessPolicy）。
      */
     public String generateDownloadUrl(String fileKey) {
+        return generateDownloadUrl(fileKey, properties.getAccessPolicy());
+    }
+
+    /**
+     * 入库前标准化：系统内七牛 URL 尽量回收成 fileKey，外链保持原样。
+     */
+    public String normalizeForStorage(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            return rawValue;
+        }
+        var trimmed = rawValue.trim();
+        if (!isHttpUrl(trimmed)) {
+            return normalizeFileKey(trimmed);
+        }
+        var fileKey = tryExtractFileKeyFromManagedUrl(trimmed);
+        return fileKey == null ? trimmed : fileKey;
+    }
+
+    /**
+     * 响应前转换成可访问地址：外链原样返回，内部资源统一转访问地址。
+     * <p>
+     * 使用全局 accessPolicy。
+     */
+    public String resolveAccessUrl(String rawValue) {
+        return resolveAccessUrl(rawValue, properties.getAccessPolicy());
+    }
+
+    /**
+     * 响应前转换成可访问地址（显式指定访问策略）。
+     * <p>
+     * 当一个 bucket 内同时存有公开和私有资源时，调用方可以按字段/场景传入不同的 policy。
+     *
+     * @param rawValue 原始值（fileKey 或 URL）
+     * @param policy   访问策略
+     * @return 可访问地址
+     */
+    public String resolveAccessUrl(String rawValue, QiniuAccessPolicy policy) {
+        if (rawValue == null || rawValue.isBlank()) {
+            return rawValue;
+        }
+        var trimmed = rawValue.trim();
+        if (!isHttpUrl(trimmed)) {
+            return generateDownloadUrl(trimmed, policy);
+        }
+        var fileKey = tryExtractFileKeyFromManagedUrl(trimmed);
+        return fileKey == null ? trimmed : generateDownloadUrl(fileKey, policy);
+    }
+
+    /**
+     * 生成下载链接（显式指定访问策略）。
+     *
+     * @param fileKey 文件标识
+     * @param policy  访问策略
+     * @return 可访问地址
+     */
+    public String generateDownloadUrl(String fileKey, QiniuAccessPolicy policy) {
         var normalizedKey = normalizeFileKey(fileKey);
         var encodedKey = encodePathPreserveSlash(normalizedKey);
         var domain = trimTrailingSlash(properties.getDomain());
+
+        if (policy == QiniuAccessPolicy.PUBLIC) {
+            return domain + "/" + encodedKey;
+        }
+
         var expireSeconds = getDownloadExpireSeconds();
         var useTimestamp = useTimestampSignedUrl();
 
@@ -172,7 +237,7 @@ public class QiniuStorageService {
                 ? sha256Hex("ts|" + nullToEmpty(properties.getCdnTimestampKey()))
                 : sha256Hex("private|" + nullToEmpty(properties.getAccessKey()) + "|" + nullToEmpty(properties.getSecretKey()));
         var cacheId = sha256Hex((useTimestamp ? "ts" : "private") + "|" + signerVersion + "|" + domain + "|" + normalizedKey + "|" + expireSeconds);
-        var cacheKey = RedisKeyConstants.qiniuDownloadUrl(cacheId);
+        var cacheKey = QiniuRedisKeys.qiniuDownloadUrl(cacheId);
         var cachedUrl = getCachedDownloadUrl(cacheKey);
         if (cachedUrl != null) {
             log.debug("命中七牛下载链接缓存: key={}", normalizedKey);
@@ -221,6 +286,10 @@ public class QiniuStorageService {
         return value == null ? "" : value;
     }
 
+    private boolean isPublicAccessPolicy() {
+        return properties.getAccessPolicy() == QiniuAccessPolicy.PUBLIC;
+    }
+
     private String getCachedDownloadUrl(String cacheKey) {
         try {
             var cached = redisUtil.get(cacheKey);
@@ -246,6 +315,32 @@ public class QiniuStorageService {
 
     private boolean useTimestampSignedUrl() {
         return properties.getCdnTimestampKey() != null && !properties.getCdnTimestampKey().isBlank();
+    }
+
+    private boolean isHttpUrl(String value) {
+        return value.startsWith("http://") || value.startsWith("https://");
+    }
+
+    private String tryExtractFileKeyFromManagedUrl(String rawUrl) {
+        try {
+            var domain = trimTrailingSlash(properties.getDomain());
+            if (domain.isBlank()) {
+                return null;
+            }
+            var rawUri = URI.create(rawUrl);
+            var domainUri = URI.create(domain);
+            if (!nullToEmpty(rawUri.getHost()).equalsIgnoreCase(nullToEmpty(domainUri.getHost()))) {
+                return null;
+            }
+            var path = rawUri.getPath();
+            if (path == null || path.isBlank() || "/".equals(path)) {
+                return null;
+            }
+            return normalizeFileKey(URLDecoder.decode(path.substring(1), StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            log.debug("从七牛 URL 提取 fileKey 失败: url={}, error={}", rawUrl, e.getMessage());
+            return null;
+        }
     }
 
     private String buildTimestampSignedUrl(String domain, String encodedPath, long expireSeconds) {

@@ -36,6 +36,11 @@ public class QiniuProperties {
     private String domain;
 
     /**
+     * 访问策略：PUBLIC / PRIVATE，默认公开空间。
+     */
+    private QiniuAccessPolicy accessPolicy = QiniuAccessPolicy.PUBLIC;
+
+    /**
      * 上传成功后的回调地址
      */
     private String callbackUrl;
