@@ -1,5 +1,6 @@
 .idea/
 .vscode
+.DS_Store
 # Eclipse/STS
 .project
 .classpath
@@ -9,7 +10,6 @@
 *.class
 **/.codex/
 **/.gemini/
-**/.agent/
 **/.cursor/
 # 如果你使用了 Maven，排除整个 target 目录
 target/

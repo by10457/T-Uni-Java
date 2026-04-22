@@ -17,7 +17,6 @@ import t.uni.common.config.redis.RedisUtil;
 import t.uni.common.core.result.ResultCodeEnum;
 
 import java.net.URI;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -148,7 +147,11 @@ public class QiniuStorageService {
     }
 
     public long getDownloadExpireSeconds() {
-        if (isPublicAccessPolicy()) {
+        return getDownloadExpireSeconds(properties.getAccessPolicy());
+    }
+
+    private long getDownloadExpireSeconds(QiniuAccessPolicy policy) {
+        if (policy == QiniuAccessPolicy.PUBLIC) {
             return properties.getDownloadExpireSeconds();
         }
         return useTimestampSignedUrl()
@@ -224,7 +227,7 @@ public class QiniuStorageService {
             return domain + "/" + encodedKey;
         }
 
-        var expireSeconds = getDownloadExpireSeconds();
+        var expireSeconds = getDownloadExpireSeconds(policy);
         var useTimestamp = useTimestampSignedUrl();
 
         if (!properties.isDownloadUrlCacheEnabled()) {
@@ -332,11 +335,13 @@ public class QiniuStorageService {
             if (!nullToEmpty(rawUri.getHost()).equalsIgnoreCase(nullToEmpty(domainUri.getHost()))) {
                 return null;
             }
+            // URI.getPath() 已经完成了 %XX 解码，不要再用 URLDecoder.decode，
+            // 因为 URLDecoder 会把 path 中合法的 '+' 错误地转成空格。
             var path = rawUri.getPath();
             if (path == null || path.isBlank() || "/".equals(path)) {
                 return null;
             }
-            return normalizeFileKey(URLDecoder.decode(path.substring(1), StandardCharsets.UTF_8));
+            return normalizeFileKey(path.substring(1));
         } catch (Exception e) {
             log.debug("从七牛 URL 提取 fileKey 失败: url={}, error={}", rawUrl, e.getMessage());
             return null;
