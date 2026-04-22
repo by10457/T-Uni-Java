@@ -1,4 +1,4 @@
-package t.uni.common.core.exception;
+package t.uni.common.config.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.Result;
 import t.uni.common.core.result.ResultCodeEnum;
 
@@ -38,7 +39,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BaseException.class)
     public Result<Object> handleBaseException(BaseException e) {
         log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage());
-        Integer code = e.getCode() != null ? e.getCode() : 500;
+        Integer code = e.getCode() != null ? e.getCode() : ResultCodeEnum.SERVICE_ERROR.getCode();
         return Result.error(null, code, e.getMessage());
     }
 
@@ -107,7 +108,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateKeyException.class)
     public Result<Object> handleDuplicateKeyException(DuplicateKeyException e) {
         log.error("数据库唯一键冲突", e);
-        return Result.error(null, 500, "数据已存在，请勿重复提交");
+        return Result.error(null, ResultCodeEnum.DATA_EXIST.getCode(), "数据已存在，请勿重复提交");
     }
 
     /**
@@ -117,7 +118,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public Result<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
         log.error("数据库完整性异常", e);
-        return Result.error(null, 500, "提交的数据不符合规范(如内容过长或缺项)");
+        return Result.error(null, ResultCodeEnum.DATA_ERROR.getCode(), "提交的数据不符合规范(如内容过长或缺项)");
     }
 
     /**
@@ -128,9 +129,9 @@ public class GlobalExceptionHandler {
         log.error("SQL原生约束异常", e);
         String msg = e.getMessage();
         if (msg != null && msg.contains("Duplicate entry")) {
-            return Result.error(null, 500, "数据已存在，请勿重复提交");
+            return Result.error(null, ResultCodeEnum.DATA_EXIST.getCode(), "数据已存在，请勿重复提交");
         }
-        return Result.error(null, 500, "数据操作失败");
+        return Result.error(null, ResultCodeEnum.DATA_ERROR.getCode(), "数据操作失败");
     }
 
     /**
@@ -139,7 +140,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoHandlerFoundException.class)
     public Result<Object> handleNoHandlerFoundException(NoHandlerFoundException e) {
         log.warn("接口不存在: {}", e.getRequestURL());
-        return Result.error(null, 404, "接口不存在");
+        return Result.error(null, ResultCodeEnum.DATA_NOT_EXIST.getCode(), "接口不存在");
     }
 
     /**
@@ -163,7 +164,7 @@ public class GlobalExceptionHandler {
         if (className.contains("MyBatisSystemException") ||
                 className.contains("PersistenceException")) {
             log.error("持久层严重错误", e);
-            return Result.error(null, 500, "数据库服务异常");
+            return Result.error(null, ResultCodeEnum.SERVICE_ERROR.getCode(), "数据库服务异常");
         }
 
         // --- 未知异常 ---
@@ -171,6 +172,6 @@ public class GlobalExceptionHandler {
         log.error("系统未知异常", e);
 
         // 给用户看模糊提示，绝对不要 return e.getMessage()
-        return Result.error(null, 500, DEFAULT_SERVER_ERROR_MSG);
+        return Result.error(null, ResultCodeEnum.SERVICE_ERROR.getCode(), DEFAULT_SERVER_ERROR_MSG);
     }
 }

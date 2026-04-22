@@ -1,9 +1,8 @@
-package t.uni.common.core.security;
+package t.uni.common.config.jwt;
 
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import t.uni.common.core.config.JwtProperties;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;

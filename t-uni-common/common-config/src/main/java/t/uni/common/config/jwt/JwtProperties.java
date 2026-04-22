@@ -1,8 +1,7 @@
-package t.uni.common.core.config;
+package t.uni.common.config.jwt;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * JWT 配置属性类
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Component;
  * </p>
  */
 @Data
-@Component
 @ConfigurationProperties(prefix = "t.uni.jwt")
 public class JwtProperties {
 

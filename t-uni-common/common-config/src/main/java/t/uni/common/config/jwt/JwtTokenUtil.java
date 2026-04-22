@@ -1,4 +1,4 @@
-package t.uni.common.core.utils;
+package t.uni.common.config.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -7,7 +7,6 @@ import io.jsonwebtoken.Jwts;
 import org.springframework.util.StringUtils;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.ResultCodeEnum;
-import t.uni.common.core.security.JwtKeyHolder;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
