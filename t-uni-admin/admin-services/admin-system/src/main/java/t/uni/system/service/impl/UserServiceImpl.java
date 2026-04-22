@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.PageResult;
 import t.uni.common.core.result.ResultCodeEnum;
+import t.uni.domain.common.enums.AdminResultCodeEnum;
 import t.uni.domain.common.constant.FileStorageConstant;
 import t.uni.domain.common.constant.UserConstant;
 import t.uni.domain.common.model.vo.LoginVo;
@@ -307,7 +308,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AdminUser> implemen
         // 根据用户Id列表查询用户角色
         List<Role> list = roleMapper.selectListByUserIds(ids);
         List<Role> roleList = list.stream().filter(role -> role.getRoleCode().equals("admin") || ids.contains(1L)).toList();
-        if (!roleList.isEmpty()) throw new BaseException(ResultCodeEnum.ADMIN_ROLE_CAN_NOT_DELETED);
+        if (!roleList.isEmpty()) {
+            throw new BaseException(
+                    AdminResultCodeEnum.ADMIN_ROLE_CAN_NOT_DELETED.getCode(),
+                    AdminResultCodeEnum.ADMIN_ROLE_CAN_NOT_DELETED.getMessage()
+            );
+        }
 
         // 清除Redis中数据
         applicationEventPublisher.publishEvent(new UpdateUserinfoByUserIdsEvent(this, ids));

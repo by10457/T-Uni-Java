@@ -5,7 +5,7 @@ import jakarta.mail.MessagingException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import t.uni.common.core.exception.BaseException;
-import t.uni.common.core.result.ResultCodeEnum;
+import t.uni.domain.common.enums.AdminResultCodeEnum;
 import t.uni.domain.common.model.dto.email.EmailSend;
 import t.uni.domain.common.model.dto.email.EmailSendInit;
 import t.uni.domain.configuration.entity.EmailTemplate;
@@ -29,7 +29,12 @@ public abstract class AbstractSenderEmailTemplate {
      */
     public void sendEmail(String email, EmailTemplate emailTemplate, HashMap<String, Object> params) {
         // 判断邮件模板是否为空
-        if (emailTemplate == null) throw new BaseException(ResultCodeEnum.EMAIL_TEMPLATE_IS_EMPTY);
+        if (emailTemplate == null) {
+            throw new BaseException(
+                    AdminResultCodeEnum.EMAIL_TEMPLATE_IS_EMPTY.getCode(),
+                    AdminResultCodeEnum.EMAIL_TEMPLATE_IS_EMPTY.getMessage()
+            );
+        }
 
         // 查询配置发送邮箱，如果没有配置发件者邮箱改用用户列表中默认的，如果默认的也为空则报错
         Long emailUser = emailTemplate.getEmailUser();
@@ -39,7 +44,12 @@ public abstract class AbstractSenderEmailTemplate {
             emailUsers = emailUsersMapper.selectOne(Wrappers.<EmailUsers>lambdaQuery().eq(EmailUsers::getIsDefault, true));
 
             // 默认发送用户也不存在
-            if (emailUsers == null) throw new BaseException(ResultCodeEnum.EMAIL_USER_IS_EMPTY);
+            if (emailUsers == null) {
+                throw new BaseException(
+                        AdminResultCodeEnum.EMAIL_USER_IS_EMPTY.getCode(),
+                        AdminResultCodeEnum.EMAIL_USER_IS_EMPTY.getMessage()
+                );
+            }
         } else {
             emailUsers = emailUsersMapper.selectOne(Wrappers.<EmailUsers>lambdaQuery().eq(EmailUsers::getId, emailUser));
         }
@@ -65,7 +75,10 @@ public abstract class AbstractSenderEmailTemplate {
             emailSend.setText(modifiedTemplate[0]);
             MailSenderProperty.sendEmail(emailSendInit, emailSend);
         } catch (MessagingException e) {
-            throw new BaseException(ResultCodeEnum.SEND_MAIL_CODE_ERROR);
+            throw new BaseException(
+                    AdminResultCodeEnum.SEND_MAIL_CODE_ERROR.getCode(),
+                    AdminResultCodeEnum.SEND_MAIL_CODE_ERROR.getMessage()
+            );
         }
     }
 }

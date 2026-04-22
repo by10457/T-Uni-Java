@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import t.uni.common.core.result.ResultCodeEnum;
+import t.uni.domain.common.enums.AdminResultCodeEnum;
 import t.uni.domain.common.constant.RedisUserConstant;
 
 import java.util.concurrent.TimeUnit;
@@ -39,7 +39,7 @@ public class EmailCacheService {
         Object emailCode = redisTemplate.opsForValue().get(userEmailCodePrefix);
 
         if (emailCode == null) {
-            throw new UsernameNotFoundException(ResultCodeEnum.EMAIL_CODE_EMPTY.getMessage());
+            throw new UsernameNotFoundException(AdminResultCodeEnum.EMAIL_CODE_EMPTY.getMessage());
         }
 
         return emailCode.toString();

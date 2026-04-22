@@ -10,6 +10,7 @@ import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.Result;
 import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.core.context.BaseContext;
+import t.uni.domain.common.enums.AdminResultCodeEnum;
 import t.uni.domain.common.model.vo.LoginVo;
 import t.uni.domain.system.dto.user.AdminUserUpdateByLocalUserDto;
 import t.uni.domain.system.dto.user.LoginDto;
@@ -40,7 +41,9 @@ public class UserLoginController {
             throw new BaseException(ResultCodeEnum.REQUEST_IS_EMPTY);
 
         userLoginService.sendLoginEmail(email);
-        return Result.success(ResultCodeEnum.EMAIL_CODE_SEND_SUCCESS);
+        return Result.success(null,
+                AdminResultCodeEnum.EMAIL_CODE_SEND_SUCCESS.getCode(),
+                AdminResultCodeEnum.EMAIL_CODE_SEND_SUCCESS.getMessage());
     }
 
     @Operation(summary = "普通用户登录刷新token", description = "刷新用户token")

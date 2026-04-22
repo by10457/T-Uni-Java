@@ -2,7 +2,7 @@ package t.uni.system.core.login;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import t.uni.common.core.result.ResultCodeEnum;
+import t.uni.domain.common.enums.AdminResultCodeEnum;
 import t.uni.domain.system.dto.user.LoginDto;
 import t.uni.domain.system.entity.AdminUser;
 import t.uni.system.core.cache.EmailCacheService;
@@ -41,7 +41,7 @@ public class EmailLoginStrategy implements LoginStrategy {
 
         // 判断用户邮箱验证码是否和Redis中发送的验证码
         if (!emailCode.equals(redisEmailCode.toLowerCase())) {
-            throw new UsernameNotFoundException(ResultCodeEnum.EMAIL_CODE_NOT_MATCHING.getMessage());
+            throw new UsernameNotFoundException(AdminResultCodeEnum.EMAIL_CODE_NOT_MATCHING.getMessage());
         }
 
         // 查询用户相关内容

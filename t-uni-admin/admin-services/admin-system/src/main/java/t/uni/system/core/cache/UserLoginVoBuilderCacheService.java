@@ -5,7 +5,7 @@ import lombok.Value;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import t.uni.common.core.utils.JwtTokenUtil;
+import t.uni.common.config.jwt.JwtTokenUtil;
 import t.uni.domain.common.constant.LocalDateTimeConstant;
 import t.uni.domain.common.constant.RedisUserConstant;
 import t.uni.domain.common.model.vo.LoginVo;

@@ -24,22 +24,15 @@ public enum ResultCodeEnum {
     DELETE_SUCCESS(2003, "删除成功"),
     SORT_SUCCESS(2004, "排序成功"),
     SUCCESS_UPLOAD(2005, "上传成功"),
-    SUCCESS_LOGOUT(2006, "退出成功"),
     LOGOUT_SUCCESS(2006, "退出成功"),
-    EMAIL_CODE_REFRESH(2007, "邮箱验证码已刷新"),
-    EMAIL_CODE_SEND_SUCCESS(2008, "邮箱验证码已发送"),
 
     // ==================== 参数校验 3000-3099 ====================
     PARAM_ERROR(3000, "参数错误"),
     USERNAME_OR_PASSWORD_NOT_EMPTY(3001, "用户名或密码不能为空"),
-    EMAIL_CODE_NOT_EMPTY(3002, "邮箱验证码不能为空"),
-    SEND_EMAIL_CODE_NOT_EMPTY(3003, "请先发送邮箱验证码"),
-    EMAIL_CODE_NOT_MATCHING(3004, "邮箱验证码不匹配"),
     LOGIN_ERROR_USERNAME_PASSWORD_NOT_EMPTY(3005, "登录信息不能为空"),
     REQUEST_IS_EMPTY(3006, "请求数据为空"),
     DATA_TOO_LARGE(3007, "请求数据过大"),
     UPDATE_NEW_PASSWORD_SAME_AS_OLD_PASSWORD(3008, "新密码与密码相同"),
-    EMAIL_CODE_EMPTY(3009, "邮箱验证码过期或不存在"),
 
     // ==================== 数据/状态 3100-3199 ====================
     ILLEGAL_REQUEST(3100, "非法请求"),
@@ -47,14 +40,10 @@ public enum ResultCodeEnum {
     DATA_ERROR(3102, "数据异常"),
     DATA_EXIST(3103, "数据已存在"),
     DATA_NOT_EXIST(3104, "数据不存在"),
-    EMAIL_EXIST(3105, "邮箱已存在"),
     USER_IS_EMPTY(3106, "用户不存在"),
     ALREADY_USER_EXCEPTION(3107, "用户已存在"),
     FILE_NOT_EXIST(3108, "文件不存在"),
     MISSING_TEMPLATE_FILES(3109, "缺少模板文件"),
-    EMAIL_USER_TEMPLATE_IS_EMPTY(3110, "邮件模板为空"),
-    EMAIL_TEMPLATE_IS_EMPTY(3111, "邮件模板为空"),
-    EMAIL_USER_IS_EMPTY(3112, "关联邮件用户配置为空"),
     NEW_PASSWORD_SAME_OLD_PASSWORD(3113, "新密码不能和旧密码相同"),
 
     // ==================== 认证/会话 3200-3299 ====================
@@ -84,19 +73,14 @@ public enum ResultCodeEnum {
     FETCH_USERINFO_ERROR(3403, "获取用户信息失败"),
     ILLEGAL_DATA_REQUEST(3404, "非法数据请求"),
     CLASS_NOT_FOUND(3405, "类名不存在"),
-    ADMIN_ROLE_CAN_NOT_DELETED(3406, "无法删除admin角色"),
-    ROUTER_RANK_NEED_LARGER_THAN_THE_PARENT(3407, "设置路由等级需要大于或等于父级的路由等级"),
     GET_BUCKET_EXCEPTION(3408, "获取文件信息失败"),
-    SEND_MAIL_CODE_ERROR(3409, "邮件发送失败"),
 
-    // ==================== 用户模块 4101-4199 ====================
-    USER_NOT_EXIST(4101, "用户不存在"),
+    // ==================== 服务端用户状态 4100-4199 ====================
     NO_PERMISSION(4102, "无权限操作"),
     USER_DISABLED(4108, "账号已被禁用"),
     USER_DESTROYED(4109, "账号已注销"),
 
     // ==================== 系统错误 5000-5099 ====================
-    UNKNOWN_EXCEPTION(5000, "服务异常"),
     SERVICE_ERROR(5001, "服务异常"),
     UPLOAD_ERROR(5002, "上传失败"),
     FAIL(5003, "失败"),
