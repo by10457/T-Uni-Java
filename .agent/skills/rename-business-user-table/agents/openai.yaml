@@ -1,0 +1,4 @@
+interface:
+  display_name: "业务用户表改名"
+  short_description: "安全替换 biz_user 默认实现并保持 core_user 双表边界"
+  default_prompt: "使用 $rename-business-user-table 替换默认 biz_user 模型，同时保持 core_user 加业务用户双表边界不被破坏。"
