@@ -13,6 +13,6 @@
 
 ## 使用建议
 
-1. 先执行 [init.sql](/Users/xua/Code/WorkSpaces/T-Uni/T-Uni-Java/init_sql/init.sql)。
+1. 先执行 [init.sql](init.sql)。
 2. `biz_user` 只是模板默认实现，后续可替换成你自己的业务用户表。
 3. `core_user_default_avatar` 默认不预置远程图片，首次接入前请自行补充可访问的头像资源。
