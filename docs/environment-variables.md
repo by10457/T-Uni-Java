@@ -45,6 +45,24 @@
 | `QINIU_DOMAIN` | 绑定域名或 CDN 域名 |
 | `QINIU_CDN_TIMESTAMP_KEY` | 可选，CDN 时间戳防盗链密钥 |
 
+## OpenIM 可选
+
+默认关闭。只有需要启用 IM 时，才设置 `OPENIM_ENABLED=true` 并补齐连接信息。
+
+| 变量名 | 说明 | 示例 |
+| --- | --- | --- |
+| `OPENIM_ENABLED` | 是否启用 OpenIM，默认 `false` | `true` |
+| `OPENIM_API_ADDRESS` | OpenIM REST API 地址 | `http://localhost:10002` |
+| `OPENIM_WS_ADDRESS` | OpenIM WebSocket 地址 | `ws://localhost:10001` |
+| `OPENIM_ADMIN_USER_ID` | OpenIM 管理员 userID | `imAdmin` |
+| `OPENIM_ADMIN_SECRET` | OpenIM 管理员 secret | `openim_admin_secret` |
+| `OPENIM_USER_ID_PREFIX` | 模板用户映射前缀，默认 `tuni_` | `tuni_` |
+| `OPENIM_SYSTEM_NOTICE_USER_ID` | 系统通知账号 userID，默认 `tuni_system` | `tuni_system` |
+| `OPENIM_SYSTEM_NOTICE_NICKNAME` | 系统通知账号昵称 | `系统通知` |
+| `OPENIM_SYSTEM_NOTICE_AVATAR` | 系统通知账号头像 URL | `https://...` |
+| `OPENIM_DEFAULT_USER_AVATAR` | 用户头像为空时的兜底 URL | `https://...` |
+| `OPENIM_WEBHOOK_TOKEN` | OpenIM Webhook URL token | `replace_with_token` |
+
 ## 管理端必填
 
 | 变量名 | 说明 | 示例 |

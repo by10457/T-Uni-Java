@@ -57,18 +57,23 @@
 
 当前结论：
 
-- 这轮不做
-- 放到二期独立模块
+- 已完成 OpenIM 最小模板版
+- 作为 `t-uni-server/server-services/server-im` 可选模块提供
+- 默认 `openim.enabled=false`，不影响最小启动路径
 
-推荐拆分：
+已纳入模板的能力：
 
-- `common-im-core`
-  - 账号映射
-  - token
-  - webhook 安全
-  - 用户同步
-- `common-im-openim-starter`
-  - OpenIM 适配
+- OpenIM 用户按需注册
+- OpenIM user token 获取
+- admin token JVM 内存缓存
+- Webhook token 验签与统一放行
+- 系统通知同步直发
+
+后续可增强：
+
+- 多 IM 厂商抽象
+- 更完整的消息 outbox / 重试
+- 管理端 IM 运维视图
 
 不纳入主模板的部分：
 

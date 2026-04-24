@@ -15,13 +15,14 @@
 - `common-core` / `common-config` 基础设施
 - MyBatis-Plus、Redis、Knife4j、微信小程序 SDK
 - 可选的七牛云基础能力
+- 可选的 OpenIM 即时通讯基础能力
 - 可选的管理后台后端
 - 面向 AI 的 Prompt / Skill / 上下文文档
 
 ## 这份模板当前不包含什么
 
 - 业务域模型与业务表全量复制
-- 默认接入支付、消息通知、IM
+- 默认接入支付、业务消息通知
 - 默认开放完整后台前端
 - 把 `wxy-server` 的历史兼容逻辑直接照搬进主链路
 
@@ -32,9 +33,9 @@
 - `t-uni-common`
   说明：共享基础能力，包含返回结构、异常、校验、Redis / MyBatis / Qiniu 等配置。
 - `t-uni-server`
-  说明：小程序服务端主路径，重点是登录鉴权、用户基础模型、模板 API 能力。
+  说明：小程序服务端主路径，重点是登录鉴权、用户基础模型、模板 API 能力，可按需启用 `server-im`。
 - `t-uni-admin`
-  说明：可选管理后台后端，适合需要后台管理时再接入。
+  说明：可选管理后台后端，适合需要后台管理时再接入；它不是模板主路径，后续可考虑拆成独立仓库。
 - `init_sql`
   说明：数据库初始化脚本。`init.sql` 是服务端最小启动脚本。
 - `docs`
@@ -71,10 +72,11 @@
 - `admin-api` 的启动类是 `TUniAdminApplication`
 - 推荐先在 IDEA 中分别建立两个 Spring Boot Run Configuration
 
-如果你想快速起本地依赖，当前仓库还没有提供 `docker-compose`，但至少建议准备：
+如果你想快速起本地依赖，可以使用仓库根目录的 `docker-compose.yml` 启动 `MySQL 8` 和 `Redis`：
 
-- 一个 `MySQL 8`
-- 一个 `Redis`
+```bash
+docker compose up -d
+```
 
 ## 文档导航
 
@@ -84,6 +86,7 @@
 - [认证与登录链路](docs/auth-flows.md)
 - [微信小程序接入说明](docs/wechat-miniapp.md)
 - [七牛云存储说明](docs/storage-qiniu.md)
+- [OpenIM 接入说明](docs/im-openim.md)
 - [状态码规范](docs/status-codes.md)
 - [全局编码规范](docs/coding-standards.md)
 - [common-core 放置规范](docs/common-core-guidelines.md)
@@ -140,6 +143,19 @@
 
 更细的说明见 [docs/storage-qiniu.md](docs/storage-qiniu.md)。
 
+### 4. OpenIM 接入
+
+当前 OpenIM 能力是可选装配，默认 `openim.enabled=false`。
+
+启用后模板提供：
+
+- `/im/config` 返回前端连接配置
+- `/im/token` 按需注册 OpenIM 用户并返回 user token
+- `/openim/webhook/{command}` 统一验签放行
+- `OpenImNoticeService` 同步直发系统通知
+
+更细的说明见 [docs/im-openim.md](docs/im-openim.md)。
+
 ## 当前已知注意事项
 
 - 服务端默认端口是 `10457`
@@ -147,7 +163,8 @@
 - `WX_AUTH_LOGIN_IDENTIFIER` 默认推荐保持 `MA_OPEN_ID`
 - 默认昵称池有示例数据，但默认头像池没有远程图片种子，首次登录头像可能为空
 - `t-uni-admin` 是可选能力，不接后台时可以只使用 `t-uni-server`
+- `t-uni-admin` 代码量较大，当前保留为历史后台能力；主模板叙事以 `t-uni-server` 为准
 
 ## 后续规划
 
-支付、消息通知、IM 这类能力暂不直接塞进主模板，原因和后续模块化方案见 [TODO.md](TODO.md)。
+支付、业务消息通知这类能力暂不直接塞进主模板，原因和后续模块化方案见 [TODO.md](TODO.md)。OpenIM 已作为可选模块提供最小模板能力。

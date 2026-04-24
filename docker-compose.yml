@@ -1,0 +1,30 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: tuni-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${T_UNI_DOCKER_MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${T_UNI_DB_NAME:-tuni}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - tuni-mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    container_name: tuni-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - tuni-redis-data:/data
+
+volumes:
+  tuni-mysql-data:
+  tuni-redis-data:

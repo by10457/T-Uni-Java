@@ -19,7 +19,13 @@
 
 ### 快速起本地依赖（可选）
 
-如果你还没有 MySQL 和 Redis，可以用 Docker 一键启动：
+如果你还没有 MySQL 和 Redis，推荐直接用仓库根目录的 `docker-compose.yml`：
+
+```bash
+docker compose up -d
+```
+
+也可以手动用 Docker 启动：
 
 ```bash
 docker run -d --name tuni-mysql -p 3306:3306 \
