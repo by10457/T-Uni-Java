@@ -107,6 +107,11 @@ public class CoreUser implements Serializable {
     private Integer isFake;
 
     /**
+     * 是否已同步到 OpenIM
+     */
+    private Boolean imRegistered;
+
+    /**
      * 认证学校编码
      */
     private String authSchoolCode;

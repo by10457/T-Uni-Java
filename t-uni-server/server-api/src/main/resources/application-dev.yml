@@ -32,3 +32,18 @@ t.uni:
     secret: ${T_UNI_JWT_SECRET:replace_with_a_64_byte_secret_in_real_env}
 
 # Qiniu is optional. Only add qiniu.* properties when you actually enable Qiniu.
+
+# ===== OpenIM（可选，默认关闭）=====
+openim:
+  enabled: ${OPENIM_ENABLED:false}
+  api-address: ${OPENIM_API_ADDRESS:}
+  ws-address: ${OPENIM_WS_ADDRESS:}
+  admin-user-id: ${OPENIM_ADMIN_USER_ID:}
+  admin-secret: ${OPENIM_ADMIN_SECRET:}
+  user-id-prefix: ${OPENIM_USER_ID_PREFIX:tuni_}
+  system-notice-user-id: ${OPENIM_SYSTEM_NOTICE_USER_ID:tuni_system}
+  system-notice-nickname: ${OPENIM_SYSTEM_NOTICE_NICKNAME:系统通知}
+  system-notice-avatar: ${OPENIM_SYSTEM_NOTICE_AVATAR:https://img.icons8.com/color/96/appointment-reminders.png}
+  default-user-avatar: ${OPENIM_DEFAULT_USER_AVATAR:}
+  webhook:
+    token: ${OPENIM_WEBHOOK_TOKEN:}

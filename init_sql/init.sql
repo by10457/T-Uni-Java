@@ -25,6 +25,7 @@ CREATE TABLE `core_user`
     `is_disable`       tinyint(1)                   DEFAULT '0' COMMENT '是否禁用：0否 1是',
     `is_destroy`       tinyint(1)                   DEFAULT '0' COMMENT '是否注销：0否 1是',
     `is_fake`          tinyint(1) unsigned zerofill DEFAULT '0' COMMENT '是否虚拟用户：0否 1是',
+    `im_registered`    tinyint(1)                   DEFAULT '0' COMMENT '是否已同步到OpenIM：0否 1是',
     `auth_school_code` varchar(100)                 DEFAULT NULL COMMENT '认证学校编码',
     `auth_school_time` datetime                     DEFAULT NULL COMMENT '认证学校时间',
     `auth_phone_time`  datetime                     DEFAULT NULL COMMENT '授权手机号时间',

@@ -113,6 +113,11 @@
                 <artifactId>server-auth</artifactId>
                 <version>${t-uni.version}</version>
             </dependency>
+            <dependency>
+                <groupId>t.uni</groupId>
+                <artifactId>server-im</artifactId>
+                <version>${t-uni.version}</version>
+            </dependency>
 
             <!-- 第三方依赖 -->
             <!-- MyBatis Plus -->

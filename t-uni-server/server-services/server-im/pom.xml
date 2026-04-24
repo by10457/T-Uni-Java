@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>t.uni</groupId>
+        <artifactId>server-services</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>server-im</artifactId>
+    <packaging>jar</packaging>
+    <name>Server-IM</name>
+    <description>可选 OpenIM 接入模块：用户同步、Token、系统通知、Webhook</description>
+
+    <dependencies>
+
+        <!-- Server Domain -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>server-domain</artifactId>
+            <version>${t-uni.version}</version>
+        </dependency>
+
+        <!-- Server Common -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>server-common</artifactId>
+            <version>${t-uni.version}</version>
+        </dependency>
+
+        <!-- Common Config（用 QiniuStorageService、RedisUtil 等） -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>common-config</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starter Data Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Hutool（HttpRequest + JSONUtil，父 POM 已管理版本） -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

@@ -23,6 +23,12 @@
             <artifactId>server-auth</artifactId>
         </dependency>
 
+        <!-- Server IM（可选 OpenIM 接入） -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>server-im</artifactId>
+        </dependency>
+
         <!-- Server Common -->
         <dependency>
             <groupId>t.uni</groupId>

@@ -36,6 +36,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/v3/api-docs",
                         "/v3/api-docs/**",
                         "/webjars/**",
-                        "/favicon.ico");
+                        "/favicon.ico",
+
+                        // OpenIM Webhook 回调（不走认证拦截）
+                        "/openim/webhook/**");
     }
 }
