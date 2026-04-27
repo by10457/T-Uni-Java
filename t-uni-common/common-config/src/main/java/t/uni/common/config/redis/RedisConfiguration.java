@@ -29,13 +29,20 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 设置Redis序列化
+ * Redis 序列化和缓存管理配置。
+ * <p>
+ * 统一使用字符串 key 和 JSON value，避免默认 JDK 序列化产生不可读数据。
+ * 当前 RedisTemplate 不启用事务支持，调用方如需事务或 Pipeline 应使用 RedisUtil 的显式方法。
+ * </p>
  */
 @Component
 @Slf4j
 public class RedisConfiguration {
     /**
-     * 使用StringRedisSerializer序列化为字符串
+     * 创建通用 RedisTemplate。
+     *
+     * @param connectionFactory Lettuce 连接工厂
+     * @return 使用字符串 key 和 JSON value 的 RedisTemplate
      */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(LettuceConnectionFactory connectionFactory) {
@@ -57,9 +64,10 @@ public class RedisConfiguration {
     }
 
     /**
-     * * 配置Redis过期时间
-     * 一个月
-     * 解决cache(@Cacheable)把数据缓存到redis中的value是乱码问题
+     * 创建默认缓存管理器，缓存有效期为 30 天。
+     *
+     * @param factory Redis 连接工厂
+     * @return 默认 CacheManager
      */
     @Bean
     @Primary
@@ -75,11 +83,10 @@ public class RedisConfiguration {
     }
 
     /**
-     * * 配置redis过期时间
-     * 半个月
+     * 创建缓存有效期为 15 天的缓存管理器。
      *
-     * @param factory
-     * @return
+     * @param factory Redis 连接工厂
+     * @return CacheManager
      */
     @Bean
     @SuppressWarnings("all")
@@ -94,10 +101,10 @@ public class RedisConfiguration {
     }
 
     /**
-     * * 配置Redis过期时间1小时
+     * 创建缓存有效期为 1 小时的缓存管理器。
      *
-     * @param factory
-     * @return
+     * @param factory Redis 连接工厂
+     * @return CacheManager
      */
     @Bean
     @SuppressWarnings("all")
@@ -112,7 +119,12 @@ public class RedisConfiguration {
     }
 
     /**
-     * 指定的日期模式
+     * 创建 Redis JSON 序列化器。
+     * <p>
+     * 统一处理 Java 8 时间类型，避免 LocalDateTime 在缓存中使用时间戳或 UTC 默认格式。
+     * </p>
+     *
+     * @return Jackson Redis 序列化器
      */
     public Jackson2JsonRedisSerializer<Object> jsonRedisSerializer() {
         // LocalDatetime序列化，默认不兼容jdk8日期序列化

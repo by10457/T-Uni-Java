@@ -9,7 +9,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 微信小程序配置
+ * 微信小程序配置。
+ * <p>
+ * 从应用配置读取 appid、secret 等参数，初始化微信小程序 SDK 服务。
+ * secret 仅写入 SDK 配置，不在日志中输出。
+ * </p>
  */
 @Slf4j
 @Configuration
@@ -30,6 +34,11 @@ public class WxMaConfiguration {
     @Value("${wx.miniapp.msgDataFormat:JSON}")
     private String msgDataFormat;
 
+    /**
+     * 创建微信小程序 SDK 服务。
+     *
+     * @return 已设置小程序配置的 WxMaService
+     */
     @Bean
     public WxMaService wxMaService() {
         WxMaDefaultConfigImpl config = new WxMaDefaultConfigImpl();

@@ -11,24 +11,30 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
- * Mybatis-Plus配置类
+ * MyBatis-Plus 基础配置。
+ * <p>
+ * 启用分页、乐观锁和全表更新/删除拦截。
+ * 该配置只提供通用基础设施，不处理租户隔离、数据权限或字段自动填充。
+ * </p>
  */
 @EnableTransactionManagement
 @Configuration
 @Slf4j
 public class MybatisPlusConfig {
 
+    /**
+     * 创建 MyBatis-Plus 拦截器链。
+     *
+     * @return 包含分页、乐观锁和防全表操作的拦截器
+     */
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        // 分页插件
+        // 限制单次分页上限，避免接口误用拉取过大结果集。
         PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
-        // 设置最大分页
         paginationInnerInterceptor.setMaxLimit(400L);
         interceptor.addInnerInterceptor(paginationInnerInterceptor);
-        // 乐观锁
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
-        // 防止全表删除
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
 
         return interceptor;

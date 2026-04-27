@@ -12,13 +12,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 健康检查Controller
+ * 健康检查 Controller。
+ * <p>
+ * 提供轻量级存活检查，不依赖登录态和外部服务。
+ * </p>
  */
 @Tag(name = "健康检查", description = "服务健康状态检查接口")
 @RestController
 @RequestMapping("/health")
 public class HealthController {
 
+    /**
+     * 返回服务基础健康状态。
+     *
+     * @return 服务状态、当前时间和服务名
+     */
     @Operation(summary = "健康检查", description = "检查服务是否正常运行")
     @GetMapping
     public Result<Map<String, Object>> check() {

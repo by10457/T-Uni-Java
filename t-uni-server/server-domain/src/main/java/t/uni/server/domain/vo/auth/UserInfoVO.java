@@ -7,7 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 用户信息响应 VO
+ * 当前登录用户信息响应 VO。
+ * <p>
+ * 面向客户端展示基础资料和新用户标识，不暴露微信 openId、unionId 等登录凭据。
+ * </p>
  */
 @Data
 @Builder
@@ -47,7 +50,7 @@ public class UserInfoVO {
     private Integer gender;
 
     /**
-     * 是否新用户
+     * 是否新用户，由创建时间阈值等认证侧规则计算
      */
     @Schema(description = "是否新用户")
     private Boolean isNewUser;

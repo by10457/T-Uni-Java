@@ -26,6 +26,12 @@ public enum TrueFalseEnum {
     private final Integer status;
     private final String desc;
 
+    /**
+     * 按数据库状态值获取布尔枚举。
+     *
+     * @param status 状态值
+     * @return 匹配的枚举；未知状态返回 null
+     */
     public static TrueFalseEnum getByStatus(Integer status) {
         if (status == null) {
             return null;
@@ -39,14 +45,20 @@ public enum TrueFalseEnum {
     }
 
     /**
-     * 判断是否为 TRUE
+     * 判断状态值是否表示真。
+     *
+     * @param status 状态值
+     * @return true 表示真
      */
     public static boolean isTrue(Integer status) {
         return TRUE.getStatus().equals(status);
     }
 
     /**
-     * 判断是否为 FALSE
+     * 判断状态值是否表示假。
+     *
+     * @param status 状态值
+     * @return true 表示假
      */
     public static boolean isFalse(Integer status) {
         return FALSE.getStatus().equals(status);

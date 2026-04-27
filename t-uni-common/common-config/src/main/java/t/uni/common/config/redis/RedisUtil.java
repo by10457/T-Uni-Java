@@ -15,19 +15,13 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis工具类
+ * Redis 工具类。
  * <p>
- * 提供常用的Redis操作方法，包括String、Hash、List、Set、ZSet等数据结构的操作
- * 以及分布式锁、批量操作等高级功能。
+ * 封装 String、Hash、List、Set、ZSet、Lua、Pipeline 等常用操作。
+ * 该类优先保证调用方不因 Redis 异常中断主流程，多数方法会记录日志并返回默认值；需要强一致失败语义的业务应自行判断返回值。
  * </p>
  * <p>
- * 设计原则：
- * <ul>
- *     <li>统一异常处理：所有方法都包含try-catch，异常时返回默认值或false</li>
- *     <li>空值安全：对null参数进行校验，避免NPE</li>
- *     <li>返回值明确：所有方法都有明确的返回值，避免void方法忽略返回值</li>
- *     <li>批量操作优化：使用Pipeline减少网络往返</li>
- * </ul>
+ * 边界：不做业务 key 命名、数据加密或权限隔离。写入缓存前应避免保存敏感明文，日志只记录 key 和数量等排障信息。
  * </p>
  */
 @Slf4j
@@ -459,7 +453,7 @@ public class RedisUtil {
     /**
      * 向一张hash表中放入数据，如果不存在将创建，并设置过期时间
      * <p>
-     * 注意：如果已存在的hash表有时间，这里将会替换原有的时间
+     * 注意：如果已存在的hash表有时间，本操作会替换原有过期时间。
      * </p>
      *
      * @param key   键，不能为null
@@ -1026,6 +1020,9 @@ public class RedisUtil {
 
     /**
      * 尝试获取分布式锁
+     * <p>
+     * 使用 SETNX + EXPIRE 原子语义，value 建议使用调用方生成的唯一随机值。
+     * </p>
      *
      * @param key        锁的key
      * @param value      锁的value（建议使用UUID）
@@ -1045,7 +1042,8 @@ public class RedisUtil {
     /**
      * 释放分布式锁
      * <p>
-     * 注意：只有当前value与锁的value匹配时才会释放，避免误释放其他线程的锁
+     * 只有当前 value 与锁值匹配时才释放，避免误释放其他线程的锁。
+     * 对严格锁场景，建议使用 Lua 保证校验和删除的原子性。
      * </p>
      *
      * @param key   锁的key，不能为null
@@ -1086,7 +1084,7 @@ public class RedisUtil {
         }
         try {
             redisTemplate.convertAndSend(channel, message);
-            // convertAndSend 不返回订阅者数量，这里返回1表示成功
+            // convertAndSend 不返回订阅者数量，返回 1 仅表示发布命令已执行。
             return 1L;
         } catch (Exception e) {
             log.error("Redis发布消息失败，channel: {}, message: {}", channel, message, e);
@@ -1098,6 +1096,9 @@ public class RedisUtil {
 
     /**
      * 获取匹配的key列表
+     * <p>
+     * 使用 Redis KEYS 命令，生产环境大 key 空间下可能阻塞 Redis，应优先使用明确 key 或 SCAN 方案。
+     * </p>
      *
      * @param pattern 匹配模式，如：user:*
      * @return key列表
@@ -1113,6 +1114,9 @@ public class RedisUtil {
 
     /**
      * 批量删除key
+     * <p>
+     * 内部使用 KEYS 查找匹配项，生产环境大 key 空间下需谨慎调用。
+     * </p>
      *
      * @param pattern 匹配模式，如：user:*
      * @return 删除的数量

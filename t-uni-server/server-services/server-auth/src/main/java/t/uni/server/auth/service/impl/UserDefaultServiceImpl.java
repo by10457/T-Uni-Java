@@ -12,7 +12,10 @@ import t.uni.server.domain.entity.CoreUserDefaultAvatar;
 import t.uni.server.domain.entity.CoreUserDefaultNickName;
 
 /**
- * 用户默认值服务实现
+ * 用户默认值服务实现。
+ * <p>
+ * 从启用状态的默认头像池和昵称池中按权重随机选择，用于微信登录自动建档。
+ * </p>
  */
 @Slf4j
 @Service
@@ -23,11 +26,12 @@ public class UserDefaultServiceImpl implements UserDefaultService {
     private final CoreUserDefaultNickNameMapper nickNameMapper;
 
     /**
-     * 获取一个随机默认头像 URL
+     * 获取一个随机默认头像 URL。
+     *
+     * @return 可用头像 URL；默认池为空时返回 null
      */
     @Override
     public String getRandomAvatarUrl() {
-        // 查询所有启用的头像
         var avatars = avatarMapper.selectList(Wrappers.<CoreUserDefaultAvatar>lambdaQuery()
                 .eq(CoreUserDefaultAvatar::getIsEnable, 1)
                 .orderByAsc(CoreUserDefaultAvatar::getSort));
@@ -37,17 +41,17 @@ public class UserDefaultServiceImpl implements UserDefaultService {
             return null;
         }
 
-        // 加权随机选择
         var selected = WeightedRandomSelector.select(avatars, CoreUserDefaultAvatar::getWeight);
         return selected != null ? selected.getAvatarUrl() : avatars.get(0).getAvatarUrl();
     }
 
     /**
-     * 获取一个随机默认昵称
+     * 获取一个随机默认昵称。
+     *
+     * @return 可用昵称；默认池为空时返回 null
      */
     @Override
     public String getRandomNickName() {
-        // 查询所有启用的昵称
         var nickNames = nickNameMapper.selectList(Wrappers.<CoreUserDefaultNickName>lambdaQuery()
                 .eq(CoreUserDefaultNickName::getIsEnable, 1)
                 .orderByAsc(CoreUserDefaultNickName::getSort));
@@ -57,7 +61,6 @@ public class UserDefaultServiceImpl implements UserDefaultService {
             return null;
         }
 
-        // 加权随机选择
         var selected = WeightedRandomSelector.select(nickNames, CoreUserDefaultNickName::getWeight);
         return selected != null ? selected.getNickName() : nickNames.get(0).getNickName();
     }

@@ -29,6 +29,12 @@
             <artifactId>server-im</artifactId>
         </dependency>
 
+        <!-- Server Payment（微信支付/退款模板） -->
+        <dependency>
+            <groupId>t.uni</groupId>
+            <artifactId>server-payment</artifactId>
+        </dependency>
+
         <!-- Server Common -->
         <dependency>
             <groupId>t.uni</groupId>

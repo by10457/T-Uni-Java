@@ -25,10 +25,11 @@ import java.util.HexFormat;
 import java.util.stream.Collectors;
 
 /**
- * 七牛云存储服务
- *
- * @author lzx
- * @since 2026-01-17
+ * 七牛云存储服务。
+ * <p>
+ * 负责上传凭证、服务端直传、回调验签、下载地址生成和存储值标准化。
+ * 不负责业务表入库、文件内容审核或用户级权限判断。访问密钥只用于签名，不应写入响应或日志。
+ * </p>
  */
 @Slf4j
 @Service
@@ -41,6 +42,9 @@ public class QiniuStorageService {
     private final RedisUtil redisUtil;
     private UploadManager uploadManager;
 
+    /**
+     * 初始化七牛上传客户端。
+     */
     @PostConstruct
     public void init() {
         this.uploadManager = new UploadManager(new Configuration(Region.autoRegion()));
@@ -51,6 +55,7 @@ public class QiniuStorageService {
      * <p>
      * 适用于批量上传场景，前端自行控制文件名。
      * 一个 Token 可复用上传多张图片。
+     * </p>
      *
      * @return 上传凭证 Token
      */
@@ -71,6 +76,9 @@ public class QiniuStorageService {
 
     /**
      * 头像上传令牌：绑定 fileKey，限制为图片且禁止覆盖。
+     *
+     * @param fileKey 文件标识
+     * @return 上传凭证 Token
      */
     public String generateAvatarUploadToken(String fileKey) {
         var normalizedKey = normalizeFileKey(fileKey);
@@ -90,10 +98,20 @@ public class QiniuStorageService {
         return System.currentTimeMillis() / 1000 + properties.getTokenExpireSeconds();
     }
 
+    /**
+     * 获取客户端直传使用的上传域名。
+     *
+     * @return 上传域名
+     */
     public String getUploadHost() {
         return properties.getUploadHost();
     }
 
+    /**
+     * 获取资源访问域名。
+     *
+     * @return CDN 或空间绑定域名
+     */
     public String getDomain() {
         return properties.getDomain();
     }
@@ -119,6 +137,10 @@ public class QiniuStorageService {
 
     /**
      * 服务端直接上传字节数组到七牛云。
+     *
+     * @param fileKey  文件标识
+     * @param bytes    文件字节内容
+     * @param mimeType MIME 类型
      */
     public void uploadBytes(String fileKey, byte[] bytes, String mimeType) {
         var normalizedKey = normalizeFileKey(fileKey);
@@ -146,6 +168,11 @@ public class QiniuStorageService {
         }
     }
 
+    /**
+     * 获取当前全局访问策略下的下载链接有效期。
+     *
+     * @return 有效期，单位秒
+     */
     public long getDownloadExpireSeconds() {
         return getDownloadExpireSeconds(properties.getAccessPolicy());
     }
@@ -161,6 +188,9 @@ public class QiniuStorageService {
 
     /**
      * 生成下载链接（使用全局 accessPolicy）。
+     *
+     * @param fileKey 文件标识
+     * @return 可访问地址
      */
     public String generateDownloadUrl(String fileKey) {
         return generateDownloadUrl(fileKey, properties.getAccessPolicy());
@@ -168,6 +198,9 @@ public class QiniuStorageService {
 
     /**
      * 入库前标准化：系统内七牛 URL 尽量回收成 fileKey，外链保持原样。
+     *
+     * @param rawValue 原始 fileKey 或 URL
+     * @return 建议入库的值
      */
     public String normalizeForStorage(String rawValue) {
         if (rawValue == null || rawValue.isBlank()) {
@@ -185,6 +218,10 @@ public class QiniuStorageService {
      * 响应前转换成可访问地址：外链原样返回，内部资源统一转访问地址。
      * <p>
      * 使用全局 accessPolicy。
+     * </p>
+     *
+     * @param rawValue 原始 fileKey 或 URL
+     * @return 可访问地址
      */
     public String resolveAccessUrl(String rawValue) {
         return resolveAccessUrl(rawValue, properties.getAccessPolicy());
@@ -194,6 +231,7 @@ public class QiniuStorageService {
      * 响应前转换成可访问地址（显式指定访问策略）。
      * <p>
      * 当一个 bucket 内同时存有公开和私有资源时，调用方可以按字段/场景传入不同的 policy。
+     * </p>
      *
      * @param rawValue 原始值（fileKey 或 URL）
      * @param policy   访问策略
@@ -254,12 +292,18 @@ public class QiniuStorageService {
         return signedUrl;
     }
 
+    /**
+     * 对路径分段编码并保留目录分隔符，避免中文、空格等字符破坏访问 URL。
+     */
     private String encodePathPreserveSlash(String path) {
         return Arrays.stream(path.split("/", -1))
                 .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8).replace("+", "%20"))
                 .collect(Collectors.joining("/"));
     }
 
+    /**
+     * 标准化文件标识，去掉前导斜杠并拒绝空 key。
+     */
     private String normalizeFileKey(String fileKey) {
         if (fileKey == null || fileKey.isBlank()) {
             throw new BaseException(ResultCodeEnum.FILE_KEY_EMPTY);
@@ -305,6 +349,9 @@ public class QiniuStorageService {
         return null;
     }
 
+    /**
+     * 写入下载链接缓存，TTL 会提前结束，避免返回临近失效的签名 URL。
+     */
     private void cacheDownloadUrl(String cacheKey, String signedUrl, long expireSeconds) {
         try {
             long ttlSeconds = expireSeconds - Math.max(0, properties.getDownloadUrlCacheRefreshAheadSeconds());
@@ -324,6 +371,9 @@ public class QiniuStorageService {
         return value.startsWith("http://") || value.startsWith("https://");
     }
 
+    /**
+     * 尝试从本系统七牛域名 URL 还原 fileKey，外部域名保持原样。
+     */
     private String tryExtractFileKeyFromManagedUrl(String rawUrl) {
         try {
             var domain = trimTrailingSlash(properties.getDomain());
@@ -348,6 +398,9 @@ public class QiniuStorageService {
         }
     }
 
+    /**
+     * 生成 CDN 时间戳防盗链地址，同时保留七牛私有空间签名参数。
+     */
     private String buildTimestampSignedUrl(String domain, String encodedPath, long expireSeconds) {
         long deadline = System.currentTimeMillis() / 1000 + expireSeconds;
         String timestamp = Long.toHexString(deadline).toLowerCase();
@@ -365,6 +418,9 @@ public class QiniuStorageService {
         return digestHex("SHA-256", input);
     }
 
+    /**
+     * 计算签名摘要，失败时中断请求，避免生成错误签名链接。
+     */
     private String digestHex(String algorithm, String input) {
         try {
             var digest = MessageDigest.getInstance(algorithm);

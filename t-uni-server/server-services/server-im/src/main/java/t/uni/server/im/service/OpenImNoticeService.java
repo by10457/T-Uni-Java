@@ -15,6 +15,9 @@ import java.util.Map;
 
 /**
  * OpenIM 系统通知直发服务（同步，不走 outbox）
+ * <p>
+ * 适合用户操作链路中必须立即反馈的轻量通知。外部发送失败会直接抛业务异常，
+ * 不在本服务内做异步补偿或持久化重试。
  *
  * @author t-uni
  * @since 2026-04-24
@@ -34,7 +37,12 @@ public class OpenImNoticeService {
     private final OpenImUserSyncService openImUserSyncService;
 
     /**
-     * 同步发送系统通知，失败直接抛异常
+     * 向单个用户同步发送系统通知。
+     * <p>
+     * 目标用户未导入 OpenIM 时会先按需注册；OpenIM 发送失败直接抛出 IM 错误码异常。
+     *
+     * @param targetUserId 本地目标用户 ID
+     * @param text 通知正文
      */
     public void sendSystemNotice(Long targetUserId, String text) {
         var targetOpenimUserId = openImProperties.buildImUserId(targetUserId);
@@ -55,6 +63,11 @@ public class OpenImNoticeService {
         }
     }
 
+    /**
+     * 组装 OpenIM 系统通知消息体。
+     * <p>
+     * sendID 必须是已初始化的通知账号，否则 OpenIM 会返回无权限错误。
+     */
     private Map<String, Object> buildPayload(String targetOpenimUserId, String text) {
         var content = new HashMap<String, Object>();
         content.put("notificationName", openImProperties.getSystemNoticeNickname());

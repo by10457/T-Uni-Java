@@ -3,52 +3,53 @@ package t.uni.server.common.auth;
 import t.uni.server.domain.vo.auth.TokenVO;
 
 /**
- * Token 服务接口
+ * 轻量 API 的 Token 服务接口。
  * <p>
- * 负责双 Token（Access Token + Refresh Token）的生成、验证和刷新
+ * 负责 Access Token 与 Refresh Token 的签发、校验、刷新和缓存映射。
+ * 该接口只表达登录态能力，不包含后台权限模型。
  * </p>
  */
 public interface TokenService {
 
     /**
-     * 生成双 Token（登录时调用）
+     * 为指定用户生成一组登录 Token。
      * <p>
-     * 同时缓存用户信息和 Token 信息到 Redis
+     * 登录成功后调用，通常同时维护 Redis 中的用户与 Token 映射。
      * </p>
      *
-     * @param userId 用户ID
-     * @param openId 微信 openId
+     * @param userId 业务登录用户 ID
+     * @param openId 微信 openId，用于缓存反查用户
      * @return Token 响应
      */
     TokenVO generateTokens(Long userId, String openId);
 
     /**
-     * 刷新 Token
+     * 使用 Refresh Token 换取新的 Token。
      *
-     * @param refreshToken 刷新令牌
+     * @param refreshToken 客户端提交的刷新令牌
      * @return 新的 Token 响应
      */
     TokenVO refreshTokens(String refreshToken);
 
     /**
-     * 验证 Access Token 并获取用户ID
+     * 校验 Access Token 并解析用户 ID。
      *
-     * @param accessToken 访问令牌
-     * @return 用户ID
+     * @param accessToken 去掉 Bearer 前缀后的访问令牌
+     * @return Token 中声明的用户 ID
      */
     Long validateAndGetUserId(String accessToken);
 
     /**
-     * 使 Token 失效（用于登出）
+     * 使指定用户的缓存 Token 失效。
      *
-     * @param userId 用户ID
+     * @param userId 需要登出的用户 ID
      */
     void invalidateToken(Long userId);
 
     /**
-     * 从缓存获取有效 Token（如果存在且未过期）
+     * 从缓存获取仍可复用的 Token。
      * <p>
-     * Python 风格：先查缓存，命中则直接返回
+     * 登录入口可先查缓存，命中且未过期时直接返回，避免重复签发。
      * </p>
      *
      * @param openId 微信 openId

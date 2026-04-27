@@ -4,10 +4,11 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 七牛云配置属性
- *
- * @author lzx
- * @since 2026-01-17
+ * 七牛云配置属性。
+ * <p>
+ * 绑定配置前缀 {@code qiniu}。accessKey、secretKey、cdnTimestampKey 属于敏感配置，
+ * 应通过环境变量或安全配置中心注入，不应写入代码、日志或接口响应。
+ * </p>
  */
 @Data
 @ConfigurationProperties(prefix = "qiniu")
@@ -16,12 +17,12 @@ public class QiniuProperties {
     private static final long DEFAULT_EXPIRE_SECONDS = 3600;
 
     /**
-     * Access Key
+     * 七牛 Access Key。
      */
     private String accessKey;
 
     /**
-     * Secret Key
+     * 七牛 Secret Key。
      */
     private String secretKey;
 
@@ -41,7 +42,7 @@ public class QiniuProperties {
     private QiniuAccessPolicy accessPolicy = QiniuAccessPolicy.PUBLIC;
 
     /**
-     * 上传成功后的回调地址
+     * 上传成功后的业务回调地址。
      */
     private String callbackUrl;
 
@@ -61,7 +62,7 @@ public class QiniuProperties {
     private long downloadExpireSeconds = DEFAULT_EXPIRE_SECONDS;
 
     /**
-     * CDN 时间戳防盗链密钥，为空时回退为私有空间签名。
+     * CDN 时间戳防盗链密钥，为空时回退为七牛私有空间签名。
      */
     private String cdnTimestampKey;
 

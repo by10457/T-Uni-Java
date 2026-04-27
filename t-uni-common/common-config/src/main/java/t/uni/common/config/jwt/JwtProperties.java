@@ -4,10 +4,10 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * JWT 配置属性类
+ * JWT 配置属性。
  * <p>
- * 从配置文件读取 JWT 相关配置
- * 配置前缀：t.uni.jwt
+ * 绑定配置前缀 {@code t.uni.jwt}，只保存签名密钥等基础配置。
+ * 密钥属于敏感配置，应通过环境变量或安全配置中心注入，不应提交到代码仓库。
  * </p>
  */
 @Data
@@ -15,10 +15,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class JwtProperties {
 
     /**
-     * JWT 密钥（至少256位/32字节）
+     * JWT 签名密钥，至少 256 位 / 32 字节。
      * <p>
-     * 用于 HMAC-SHA 算法签名 JWT token
-     * 必须在配置文件中设置，否则启动会失败
+     * 用于 HMAC-SHA 算法签名 Token。未配置或长度不足时应用启动失败。
      * </p>
      */
     private String secret;

@@ -19,6 +19,7 @@
 | `3300-3399` | 权限 / Token | `common-core` |
 | `3400-3499` | 通用业务提示 | `common-core` |
 | `4100-4199` | 服务端用户状态 | `server` 共享使用 |
+| `4300-4399` | 服务端支付 / 退款模块 | `server-payment` |
 | `5000-5099` | 系统错误 | `common-core` |
 | `5100-5199` | 存储 / 文件错误 | `common-core` |
 
@@ -44,6 +45,25 @@
 
 - admin 邮件验证码、邮件模板、admin 角色删除等状态码，已经从 `common-core` 迁出
 - `common-core` 保留的是模板主链路真正共享的状态码
+- 支付和退款状态码维护在 `server-payment` 的 `PaymentResultCodeEnum`
+
+## 支付模块当前状态码
+
+| 状态码 | 枚举 | 含义 |
+| --- | --- | --- |
+| `4301` | `PAYMENT_CONFIG_MISSING` | 微信支付配置不完整 |
+| `4302` | `PAYMENT_BIZ_HANDLER_MISSING` | 未配置业务支付处理器 |
+| `4303` | `PAYMENT_ORDER_NOT_FOUND` | 支付单不存在 |
+| `4304` | `PAYMENT_ORDER_STATUS_ERROR` | 支付单状态不允许当前操作 |
+| `4305` | `PAYMENT_AMOUNT_ERROR` | 支付金额不合法 |
+| `4306` | `PAYMENT_OPENID_MISSING` | 当前用户缺少微信小程序 openId |
+| `4307` | `PAYMENT_NOTIFY_ERROR` | 支付回调处理失败 |
+| `4308` | `PAYMENT_BIZ_HANDLER_DUPLICATE` | 业务支付处理器重复 |
+| `4309` | `PAYMENT_NOTIFY_SIGNATURE_ERROR` | 支付回调签名校验失败 |
+| `4311` | `REFUND_AMOUNT_ERROR` | 退款金额不合法 |
+| `4312` | `REFUND_ORDER_NOT_FOUND` | 退款单不存在 |
+| `4313` | `REFUND_NOTIFY_ERROR` | 退款回调处理失败 |
+| `4314` | `REFUND_STATUS_ERROR` | 退款单状态不允许当前操作 |
 
 ## 后续扩展建议
 

@@ -19,6 +19,7 @@
     <modules>
         <module>server-auth</module>
         <module>server-im</module>
+        <module>server-payment</module>
     </modules>
 
     <dependencies>

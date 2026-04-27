@@ -5,7 +5,10 @@ import org.apache.ibatis.annotations.Mapper;
 import t.uni.server.domain.entity.CoreUserDefaultAvatar;
 
 /**
- * 默认头像池 Mapper 接口
+ * 默认头像池 Mapper。
+ * <p>
+ * 访问 core_user_default_avatar，供新用户自动分配头像时读取启用项。
+ * </p>
  */
 @Mapper
 public interface CoreUserDefaultAvatarMapper extends BaseMapper<CoreUserDefaultAvatar> {

@@ -63,6 +63,30 @@
 | `OPENIM_DEFAULT_USER_AVATAR` | 用户头像为空时的兜底 URL | `https://...` |
 | `OPENIM_WEBHOOK_TOKEN` | OpenIM Webhook URL token | `replace_with_token` |
 
+## 微信支付可选
+
+默认关闭。只有需要启用微信小程序 JSAPI 支付和退款时，才设置 `WECHAT_PAY_ENABLED=true` 并补齐商户配置。
+
+| 变量名 | 说明 | 示例 |
+| --- | --- | --- |
+| `WECHAT_PAY_ENABLED` | 是否启用微信支付，默认 `false` | `true` |
+| `WECHAT_PAY_APP_ID` | 微信小程序 AppID，默认复用 `WX_MINIAPP_APPID` | `wx123...` |
+| `WECHAT_PAY_MCH_ID` | 微信支付商户号 | `1900000000` |
+| `WECHAT_PAY_MCH_SERIAL_NO` | 商户 API 证书序列号 | `123ABC...` |
+| `WECHAT_PAY_API_V3_KEY` | APIv3 密钥 | `replace_with_api_v3_key` |
+| `WECHAT_PAY_PRIVATE_KEY_PATH` | 商户私钥文件路径，和 `WECHAT_PAY_PRIVATE_KEY` 二选一 | `/secure/apiclient_key.pem` |
+| `WECHAT_PAY_PRIVATE_KEY` | 商户私钥内容，和 `WECHAT_PAY_PRIVATE_KEY_PATH` 二选一 | `-----BEGIN PRIVATE KEY-----...` |
+| `WECHAT_PAY_NOTIFY_BASE_URL` | 外网可访问的回调基础地址 | `https://api.example.com` |
+| `WECHAT_PAY_PAY_NOTIFY_PATH` | 支付回调路径，默认 `/payment/notify/wechat/pay` | `/payment/notify/wechat/pay` |
+| `WECHAT_PAY_REFUND_NOTIFY_PATH` | 退款回调路径，默认 `/payment/notify/wechat/refund` | `/payment/notify/wechat/refund` |
+| `WECHAT_PAY_ORDER_EXPIRE_MINUTES` | 支付单过期分钟数，默认 `15` | `15` |
+
+说明：
+
+- `enabled=false` 时应用可正常启动。
+- 调用支付接口时，如果配置不完整，会返回 `PAYMENT_CONFIG_MISSING`。
+- JSAPI 支付依赖 `biz_user.ma_open_id`，用户缺少 openid 时会返回 `PAYMENT_OPENID_MISSING`。
+
 ## 管理端必填
 
 | 变量名 | 说明 | 示例 |

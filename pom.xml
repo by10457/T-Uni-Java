@@ -54,6 +54,7 @@
         <velocity.version>2.2</velocity.version>
         <velocity-tools.version>3.1</velocity-tools.version>
         <qiniu-sdk.version>7.15.0</qiniu-sdk.version>
+        <weixin-java-pay.version>4.8.0</weixin-java-pay.version>
     </properties>
 
     <dependencyManagement>
@@ -116,6 +117,11 @@
             <dependency>
                 <groupId>t.uni</groupId>
                 <artifactId>server-im</artifactId>
+                <version>${t-uni.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>t.uni</groupId>
+                <artifactId>server-payment</artifactId>
                 <version>${t-uni.version}</version>
             </dependency>
 
@@ -275,6 +281,13 @@
                 <groupId>com.qiniu</groupId>
                 <artifactId>qiniu-java-sdk</artifactId>
                 <version>${qiniu-sdk.version}</version>
+            </dependency>
+
+            <!-- WxJava 微信支付 SDK -->
+            <dependency>
+                <groupId>com.github.binarywang</groupId>
+                <artifactId>weixin-java-pay</artifactId>
+                <version>${weixin-java-pay.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

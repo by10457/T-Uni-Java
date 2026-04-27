@@ -16,7 +16,10 @@ import t.uni.server.common.context.UserContext;
 import t.uni.server.domain.dto.auth.GetPhoneDTO;
 
 /**
- * 微信相关Controller
+ * 微信相关 Controller。
+ * <p>
+ * 提供需要登录态的微信能力入口，例如手机号授权。
+ * </p>
  */
 @Tag(name = "微信相关", description = "微信相关接口")
 @RestController
@@ -26,6 +29,15 @@ public class WeChatController {
 
     private final WxAuthService wxAuthService;
 
+    /**
+     * 获取当前用户授权手机号。
+     * <p>
+     * 依赖拦截器写入 UserContext；未登录时直接返回登录鉴权错误。
+     * </p>
+     *
+     * @param dto 微信手机号授权请求
+     * @return 微信返回的手机号
+     */
     @Operation(summary = "获取手机号", description = "获取用户手机号")
     @PostMapping("/getPhone")
     public Result<String> getPhone(@Valid @RequestBody GetPhoneDTO dto) {

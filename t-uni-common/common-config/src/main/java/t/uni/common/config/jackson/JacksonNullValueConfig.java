@@ -16,9 +16,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Jackson Null 值处理配置
+ * Jackson Null 值响应处理配置。
  * <p>
- * 将 null 值转换为对应类型的空值：
+ * 用于统一接口 JSON 序列化中的 null 展示，降低前端空值判断成本。
+ * 仅影响响应序列化，不改变 Java 对象本身的字段值，也不影响反序列化入参。
+ * </p>
+ * <p>
+ * 转换规则：
  * <ul>
  * <li>null 字符串 → ""</li>
  * <li>null 数组/集合 → []</li>
@@ -32,10 +36,14 @@ import java.util.Map;
 @Configuration
 public class JacksonNullValueConfig {
 
+    /**
+     * 注册 null 值序列化规则。
+     *
+     * @return Jackson 构建器自定义器
+     */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonNullValueCustomizer() {
         return builder -> builder.postConfigurer(objectMapper -> {
-            // 注册自定义的序列化器修改器
             objectMapper.setSerializerFactory(
                     objectMapper.getSerializerFactory()
                             .withSerializerModifier(new NullValueBeanSerializerModifier()));
@@ -43,7 +51,10 @@ public class JacksonNullValueConfig {
     }
 
     /**
-     * 自定义 BeanSerializerModifier，用于修改 null 值的序列化行为
+     * Bean 序列化属性修改器。
+     * <p>
+     * 根据字段声明类型替换 null 字段的写出逻辑。
+     * </p>
      */
     public static class NullValueBeanSerializerModifier extends BeanSerializerModifier {
 
@@ -65,7 +76,7 @@ public class JacksonNullValueConfig {
         }
 
         /**
-         * 根据类型确定 null 值应该转换成什么
+         * 根据字段类型确定 null 值输出形态。
          */
         private NullValueType determineNullValueType(JavaType type) {
             // 字符串类型 -> ""
@@ -121,7 +132,7 @@ public class JacksonNullValueConfig {
         }
 
         /**
-         * 判断是否是数字类型
+         * 判断字段是否属于数字类型。
          */
         private boolean isNumberType(JavaType type) {
             Class<?> rawClass = type.getRawClass();
@@ -149,7 +160,10 @@ public class JacksonNullValueConfig {
         }
 
         /**
-         * 判断是否是日期时间类型
+         * 判断字段是否属于日期时间类型。
+         * <p>
+         * 日期时间 null 保持原样，避免前端把空时间误判为有效值。
+         * </p>
          */
         private boolean isDateTimeType(JavaType type) {
             String typeName = type.getRawClass().getName();
@@ -161,30 +175,57 @@ public class JacksonNullValueConfig {
     }
 
     /**
-     * Null 值类型枚举
+     * Null 值输出类型。
      */
     public enum NullValueType {
-        STRING, // null -> ""
-        ARRAY, // null -> []
-        OBJECT, // null -> {}
-        NUMBER, // null -> 0
-        BOOLEAN // null -> false
+        /**
+         * null -> ""
+         */
+        STRING,
+        /**
+         * null -> []
+         */
+        ARRAY,
+        /**
+         * null -> {}
+         */
+        OBJECT,
+        /**
+         * null -> 0
+         */
+        NUMBER,
+        /**
+         * null -> false
+         */
+        BOOLEAN
     }
 
     /**
-     * 自定义属性序列化器，用于处理 null 值
+     * Null 字段属性写出器。
+     * <p>
+     * 仅在字段值为 null 时写出替代空值；非 null 值交回原始 writer 处理。
+     * </p>
      */
     public static class NullValuePropertyWriter extends BeanPropertyWriter {
 
         private final BeanPropertyWriter delegate;
         private final NullValueType nullValueType;
 
+        /**
+         * 基于原始属性 writer 创建 null 值包装写出器。
+         *
+         * @param base          原始属性 writer
+         * @param nullValueType null 值输出类型
+         */
         public NullValuePropertyWriter(BeanPropertyWriter base, NullValueType nullValueType) {
             super(base);
             this.delegate = base;
             this.nullValueType = nullValueType;
         }
 
+        /**
+         * 写出单个字段，null 值按配置输出为空字符串、空数组、空对象、0 或 false。
+         */
         @Override
         public void serializeAsField(Object bean, JsonGenerator gen, SerializerProvider prov) throws Exception {
             Object value = delegate.get(bean);

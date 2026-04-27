@@ -10,8 +10,11 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 核心用户实体
- * 与业务用户表通过主键 id 一对一关联
+ * 核心用户实体。
+ * <p>
+ * 保存跨业务通用的用户资料、状态和认证时间。业务用户表通过相同主键 {@code id}
+ * 与该表一对一关联，业务私有字段应放在业务用户表。
+ * </p>
  */
 @Data
 @TableName("core_user")
@@ -27,7 +30,7 @@ public class CoreUser implements Serializable {
     private Long id;
 
     /**
-     * 用户唯一ID（对外展示）
+     * 用户唯一ID（对外展示，不作为数据库主键）
      */
     private String uniqueId;
 
@@ -37,7 +40,7 @@ public class CoreUser implements Serializable {
     private Long inviteUserId;
 
     /**
-     * 微信用户 unionId
+     * 微信用户 unionId，同一微信开放平台主体下共享
      */
     private String unionId;
 
@@ -67,7 +70,7 @@ public class CoreUser implements Serializable {
     private String phone;
 
     /**
-     * 生日
+     * 生日，精确到时间由客户端或业务侧决定
      */
     private LocalDateTime birthday;
 
@@ -107,12 +110,12 @@ public class CoreUser implements Serializable {
     private Integer isFake;
 
     /**
-     * 是否已同步到 OpenIM
+     * 是否已同步到 OpenIM，用于避免重复注册 IM 用户
      */
     private Boolean imRegistered;
 
     /**
-     * 认证学校编码
+     * 认证学校编码，来自学校认证流程
      */
     private String authSchoolCode;
 

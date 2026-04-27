@@ -7,7 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Token 响应 VO（登录和刷新共用）
+ * Token 响应 VO。
+ * <p>
+ * 登录和刷新 Token 接口共用该结构，过期时间统一以秒返回给客户端。
+ * </p>
  */
 @Data
 @Builder
@@ -17,7 +20,7 @@ import lombok.NoArgsConstructor;
 public class TokenVO {
 
     /**
-     * 访问令牌（JWT）
+     * 访问令牌（JWT），用于 Authorization Bearer 请求头
      */
     @Schema(description = "访问令牌")
     private String accessToken;

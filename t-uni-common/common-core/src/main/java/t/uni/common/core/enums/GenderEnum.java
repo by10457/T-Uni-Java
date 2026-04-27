@@ -36,6 +36,12 @@ public enum GenderEnum {
     private final Integer code;
     private final String desc;
 
+    /**
+     * 按数据库编码获取性别枚举。
+     *
+     * @param code 性别编码
+     * @return 匹配的枚举；未知编码返回 null
+     */
     public static GenderEnum getByCode(Integer code) {
         if (code == null) {
             return null;

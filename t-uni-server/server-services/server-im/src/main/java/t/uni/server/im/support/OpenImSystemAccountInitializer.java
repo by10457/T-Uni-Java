@@ -14,6 +14,9 @@ import t.uni.server.im.service.OpenImAdminTokenProvider;
 
 /**
  * 启动时幂等注册系统通知账号
+ * <p>
+ * 仅在 OpenIM 模块启用且关键配置完整时执行。初始化失败只记录日志，
+ * 不阻断应用启动；后续发送通知时仍会按 OpenIM 返回结果暴露失败。
  *
  * @author t-uni
  * @since 2026-04-24
@@ -29,6 +32,11 @@ public class OpenImSystemAccountInitializer implements ApplicationRunner {
     private final OpenImProperties openImProperties;
     private final OpenImAdminTokenProvider openImAdminTokenProvider;
 
+    /**
+     * 应用启动后初始化系统通知账号。
+     * <p>
+     * 配置缺失时直接跳过，避免本地开发或未部署 OpenIM 环境启动失败。
+     */
     @Override
     public void run(ApplicationArguments args) {
         if (!isOpenImConfigured()) {
@@ -46,12 +54,20 @@ public class OpenImSystemAccountInitializer implements ApplicationRunner {
         }
     }
 
+    /**
+     * 检查访问 OpenIM 管理接口所需的最小配置。
+     */
     private boolean isOpenImConfigured() {
         return StrUtil.isNotBlank(openImProperties.getApiAddress())
             && StrUtil.isNotBlank(openImProperties.getAdminUserId())
             && StrUtil.isNotBlank(openImProperties.getAdminSecret());
     }
 
+    /**
+     * 幂等创建系统通知账号。
+     * <p>
+     * OpenIM 返回用户已存在时视为初始化完成；其他失败不重试，由日志暴露给运维排查。
+     */
     private void ensureSystemNoticeAccount() {
         var adminToken = openImAdminTokenProvider.getAdminToken();
         var userId = openImProperties.getSystemNoticeUserId();

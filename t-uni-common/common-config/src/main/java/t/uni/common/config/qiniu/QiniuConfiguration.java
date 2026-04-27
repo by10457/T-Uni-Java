@@ -8,10 +8,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 七牛云配置类
- *
- * @author lzx
- * @since 2026-01-17
+ * 七牛云自动配置。
+ * <p>
+ * 当配置了 qiniu.access-key 时创建 Auth 客户端，供存储服务生成上传和下载签名。
+ * 不校验业务 bucket 权限，也不输出 Secret Key。
+ * </p>
  */
 @Slf4j
 @Configuration
@@ -20,7 +21,10 @@ import org.springframework.context.annotation.Configuration;
 public class QiniuConfiguration {
 
     /**
-     * 创建七牛云认证客户端
+     * 创建七牛云认证客户端。
+     *
+     * @param properties 七牛配置属性
+     * @return 七牛 Auth 客户端
      */
     @Bean
     public Auth qiniuAuth(QiniuProperties properties) {

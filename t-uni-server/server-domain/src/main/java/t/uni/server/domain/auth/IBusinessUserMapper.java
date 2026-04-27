@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 /**
- * 业务用户通用Mapper接口
- * 所有业务场景的 Mapper 都应继承此接口。
+ * 业务用户 Mapper 扩展点。
+ * <p>
+ * 业务模块的用户 Mapper 继承该接口后，认证流程即可按微信身份字段查询并维护业务用户。
+ * 接入方需要保证实体字段与数据库列名一致，并为 openId/unionId 建立符合业务要求的唯一约束。
+ * </p>
  *
  * @param <T> 业务用户实体类型，必须实现 IBusinessUser 接口
  * @author lzx
@@ -14,7 +17,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 public interface IBusinessUserMapper<T extends IBusinessUser> extends BaseMapper<T> {
 
     /**
-     * 根据微信小程序 openId 查询用户
+     * 根据微信小程序 openId 查询业务用户。
      * <p>
      * 注意：不能使用 LambdaQueryWrapper + IBusinessUser::getMaOpenId，
      * 因为 MyBatis-Plus 会尝试从接口类型解析表元数据，导致 lambda 缓存失败。
@@ -29,7 +32,7 @@ public interface IBusinessUserMapper<T extends IBusinessUser> extends BaseMapper
     }
 
     /**
-     * 根据微信 unionId 查询用户
+     * 根据微信 unionId 查询业务用户。
      *
      * @param unionId 微信 unionId
      * @return 业务用户，不存在返回 null
@@ -39,7 +42,7 @@ public interface IBusinessUserMapper<T extends IBusinessUser> extends BaseMapper
     }
 
     /**
-     * 插入业务用户
+     * 插入业务用户。
      * <p>
      * 该方法封装了泛型转换，避免在 Service 层出现未检查类型转换警告。
      * 调用者传入 IBusinessUser 类型，内部转换为 T 进行插入。
@@ -53,7 +56,7 @@ public interface IBusinessUserMapper<T extends IBusinessUser> extends BaseMapper
     }
 
     /**
-     * 根据 ID 更新业务用户
+     * 根据 ID 更新业务用户。
      * <p>
      * 该方法封装了泛型转换，避免在 Service 层出现未检查类型转换警告。
      * 调用者传入 IBusinessUser 类型，内部转换为 T 进行更新。

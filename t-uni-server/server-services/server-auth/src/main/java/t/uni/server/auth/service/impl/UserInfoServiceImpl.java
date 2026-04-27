@@ -14,7 +14,10 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 /**
- * 用户信息服务实现
+ * 用户信息服务实现。
+ * <p>
+ * 读取 core_user 中的展示资料，并根据创建时间计算新用户标记。
+ * </p>
  */
 @Slf4j
 @Service
@@ -24,24 +27,25 @@ public class UserInfoServiceImpl implements IUserInfoService {
     private final CoreUserMapper coreUserMapper;
 
     /**
-     * 获取用户信息
+     * 获取用户信息。
+     *
+     * @param userId 核心用户 ID
+     * @return 对客户端展示的用户资料
      */
     @Override
     public UserInfoVO getUserInfo(Long userId) {
-        // 1. 查询核心用户信息
         var coreUser = coreUserMapper.selectById(userId);
         if (coreUser == null) {
             throw new BaseException(ResultCodeEnum.USER_IS_EMPTY.getCode(), "用户不存在");
         }
 
-        // 2. 判断是否为新用户（创建时间距离当前时间 ≤ 2分钟）
+        // 新用户只按创建时间窗口判断，避免依赖客户端是否完成资料填写。
         var isNewUser = false;
         if (coreUser.getCreateTime() != null) {
             var minutesDiff = ChronoUnit.MINUTES.between(coreUser.getCreateTime(), LocalDateTime.now());
             isNewUser = minutesDiff <= AuthConstant.NEW_USER_THRESHOLD_MINUTES;
         }
 
-        // 3. 构建并返回用户信息
         return UserInfoVO.builder()
                 .userId(coreUser.getId())
                 .uniqueId(coreUser.getUniqueId())

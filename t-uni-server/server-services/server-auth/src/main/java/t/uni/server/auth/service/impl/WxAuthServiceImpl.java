@@ -28,10 +28,13 @@ import t.uni.server.domain.vo.auth.TokenVO;
 import java.time.LocalDateTime;
 
 /**
- * 微信认证服务实现
+ * 微信认证服务实现。
  * <p>
- * 基于 core_user + 业务用户表双表实现登录，使用双 Token 机制。
- * 支持通过配置切换登录标识（maOpenId 或 unionId）
+ * 基于 core_user 与业务用户表双表实现登录：core_user 保存平台通用资料，
+ * 业务用户表保存小程序 openId/unionId 等业务侧身份。登录标识支持按配置在 maOpenId 与 unionId 间切换。
+ * </p>
+ * <p>
+ * 登录成功后使用 TokenService 维护 AccessToken/RefreshToken 与登录缓存；发现双表缺失时会尽量自动补建。
  * </p>
  */
 @Slf4j
@@ -47,7 +50,11 @@ public class WxAuthServiceImpl implements WxAuthService {
     private final IBusinessUserMapper<? extends IBusinessUser> businessUserMapper;
 
     /**
-     * 微信小程序登录
+     * 微信小程序登录。
+     * <p>
+     * 通过微信 code 换取 openId/unionId，优先命中 Token 缓存；缓存未命中时查询或创建用户双表数据。
+     * 本方法有事务边界，用户自动创建、异常数据补建和登录时间更新会一起回滚。
+     * </p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -55,7 +62,7 @@ public class WxAuthServiceImpl implements WxAuthService {
         var code = dto.getCode();
 
         try {
-            // 1. 调用微信API获取session信息
+            // 微信 code 只能换取一次 session 信息，日志仅打印脱敏标识。
             var sessionInfo = wxMaService.getUserService().getSessionInfo(code);
             var openId = sessionInfo.getOpenid();
             var unionId = sessionInfo.getUnionid();
@@ -63,17 +70,17 @@ public class WxAuthServiceImpl implements WxAuthService {
             log.info("微信登录成功，openId: {}, unionId: {}",
                     MaskUtil.maskOpenId(openId), MaskUtil.maskUnionId(unionId));
 
-            // 2. 根据配置选择登录标识
+            // 登录标识决定查业务用户表的字段：默认 maOpenId，跨应用打通场景可切换为 unionId。
             var loginIdentifier = getLoginIdentifier(openId, unionId);
 
-            // 3. 先查缓存
+            // 已登录用户可直接复用缓存 Token，减少微信接口换码后的数据库访问。
             var cachedToken = tokenService.getCachedToken(openId);
             if (cachedToken != null) {
                 log.info("命中Token缓存，用户直接登录，openId: {}", MaskUtil.maskOpenId(openId));
                 return cachedToken;
             }
 
-            // 4. 缓存未命中，查询业务用户是否存在
+            // 缓存未命中后进入双表校验链路。
             IBusinessUser businessUser = queryBusinessUser(loginIdentifier);
 
             Long userId;
@@ -93,13 +100,11 @@ public class WxAuthServiceImpl implements WxAuthService {
                 log.info("用户登录，userId: {}", userId);
             }
 
-            // 7. 更新最后登录时间
+            // 登录成功后刷新活跃时间，再写入 openId -> userId 登录缓存。
             updateLastLoginTime(userId);
 
-            // 8. 缓存用户信息
             tokenService.cacheUserInfo(openId, userId, unionId);
 
-            // 9. 生成并返回双Token
             return tokenService.generateTokens(userId, openId);
 
         } catch (WxErrorException e) {
@@ -109,7 +114,10 @@ public class WxAuthServiceImpl implements WxAuthService {
     }
 
     /**
-     * 刷新 Token
+     * 刷新 Token。
+     * <p>
+     * 具体校验、换发和旧索引清理由 TokenService 统一处理。
+     * </p>
      */
     @Override
     public TokenVO refreshToken(RefreshTokenDTO dto) {
@@ -117,19 +125,22 @@ public class WxAuthServiceImpl implements WxAuthService {
     }
 
     /**
-     * 获取用户手机号
+     * 获取并保存微信授权手机号。
+     * <p>
+     * 手机号 code 由微信一次性授权产生，只写入 core_user 的手机号和授权时间。
+     * </p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String getPhoneNumber(String code, Long userId) {
         try {
-            // 1. 调用微信API获取手机号
+            // 手机号属于敏感信息，日志只输出脱敏值。
             var phoneNumberInfo = wxMaService.getUserService().getPhoneNumber(code);
             var phoneNumber = phoneNumberInfo.getPhoneNumber();
 
             log.info("获取手机号成功，userId: {}, phone: {}", userId, MaskUtil.maskPhone(phoneNumber));
 
-            // 2. 更新用户手机号和授权时间
+            // 用户不存在时不自动建档，登录链路才负责双表创建。
             var coreUser = coreUserMapper.selectById(userId);
             if (coreUser != null) {
                 coreUser.setPhone(phoneNumber);
@@ -148,21 +159,23 @@ public class WxAuthServiceImpl implements WxAuthService {
     // ==================== 私有方法 ====================
 
     /**
-     * 创建新用户（core_user + biz_user）
+     * 创建新用户双表数据。
+     * <p>
+     * core_user 记录平台通用资料，biz_user 复用相同主键并记录小程序身份，保证后续按 userId 关联。
+     * 默认头像和昵称来自默认池，昵称为空时兜底为 user。
+     * </p>
      *
      * @param openId  微信 openId
      * @param unionId 微信 unionId
      * @return 新用户ID
      */
     private Long createNewUser(String openId, String unionId) {
-        // 1. 从默认池获取头像和昵称
+        // 默认池为空时允许继续建档，头像可为空，昵称由下面兜底。
         var avatarUrl = userDefaultService.getRandomAvatarUrl();
         var nickName = userDefaultService.getRandomNickName();
 
-        // 2. 生成用户唯一ID
         var uniqueId = "U" + IdUtil.getSnowflakeNextIdStr();
 
-        // 3. 创建 core_user
         var coreUser = new CoreUser();
         coreUser.setUniqueId(uniqueId);
         coreUser.setUnionId(unionId);
@@ -188,6 +201,9 @@ public class WxAuthServiceImpl implements WxAuthService {
 
     /**
      * 修复异常数据：core_user 已存在但 biz_user 缺失。
+     * <p>
+     * 仅在拿到 unionId 时执行，避免不同小程序 openId 误关联到同一个核心用户。
+     * </p>
      */
     private Long tryRecoverBusinessUserFromCore(String openId, String unionId) {
         if (StrUtil.isBlank(unionId)) {
@@ -216,6 +232,9 @@ public class WxAuthServiceImpl implements WxAuthService {
 
     /**
      * 更新已存在用户的信息。
+     * <p>
+     * 当微信返回的 openId/unionId 与业务表不一致时同步业务表；unionId 同时回写 core_user。
+     * </p>
      */
     private void updateExistingUser(IBusinessUser businessUser, String openId, String unionId) {
         boolean changed = false;
@@ -244,6 +263,9 @@ public class WxAuthServiceImpl implements WxAuthService {
 
     /**
      * 修复异常数据：业务用户存在但 core_user 缺失。
+     * <p>
+     * 以业务用户主键补建 core_user，保持双表 userId 一致。
+     * </p>
      */
     private void ensureCoreUserExists(IBusinessUser businessUser, String unionId) {
         if (businessUser == null || businessUser.getId() == null || coreUserMapper.selectById(businessUser.getId()) != null) {
@@ -275,6 +297,9 @@ public class WxAuthServiceImpl implements WxAuthService {
 
     /**
      * 更新最后登录时间。
+     * <p>
+     * 仅更新 core_user 活跃时间，业务用户表不承载该状态。
+     * </p>
      */
     private void updateLastLoginTime(Long userId) {
         var coreUser = coreUserMapper.selectById(userId);
@@ -287,6 +312,9 @@ public class WxAuthServiceImpl implements WxAuthService {
 
     /**
      * 根据配置获取登录标识。
+     * <p>
+     * UNION_ID 模式要求微信本次返回 unionId；否则无法可靠定位跨应用用户。
+     * </p>
      */
     private String getLoginIdentifier(String openId, String unionId) {
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {
@@ -302,6 +330,9 @@ public class WxAuthServiceImpl implements WxAuthService {
 
     /**
      * 查询业务用户。
+     * <p>
+     * 查询字段必须与 getLoginIdentifier 返回的标识保持一致。
+     * </p>
      */
     private IBusinessUser queryBusinessUser(String loginIdentifier) {
         if ("UNION_ID".equals(wxAuthProperties.getLoginIdentifier())) {

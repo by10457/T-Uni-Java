@@ -6,9 +6,10 @@ import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * API 路径前缀配置
+ * API 全局路径前缀配置。
  * <p>
- * 自动为所有 Controller 的路径添加统一前缀
+ * 根据 {@code api.prefix} 为业务 Controller 自动增加统一前缀。
+ * Controller 内只维护业务相对路径，避免各模块硬编码全局 {@code /api}。
  * </p>
  *
  * @author T-Uni-Java
@@ -21,11 +22,13 @@ public class ApiPathPrefixConfig implements WebMvcConfigurer {
     private String apiPrefix;
 
     /**
-     * 配置路径匹配规则
+     * 配置 Controller 路径前缀规则。
      * <p>
-     * 所有 @RequestMapping 的路径都会自动加上 api.prefix 前缀
-     * 排除 springdoc/swagger 相关的 Controller
+     * 当前只作用于 {@code t.uni.server.api.controller} 包下的 Controller；
+     * springdoc、Knife4j 等非业务端点不走该前缀规则。
      * </p>
+     *
+     * @param configurer Spring MVC 路径匹配配置器
      */
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {

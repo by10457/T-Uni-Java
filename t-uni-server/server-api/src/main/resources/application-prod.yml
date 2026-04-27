@@ -35,3 +35,17 @@ wx:
     login-identifier: ${WX_AUTH_LOGIN_IDENTIFIER:MA_OPEN_ID}
 
 # Qiniu is optional. Only add qiniu.* properties when you actually enable Qiniu.
+
+payment:
+  wechat:
+    enabled: ${WECHAT_PAY_ENABLED:false}
+    app-id: ${WECHAT_PAY_APP_ID:${WX_MINIAPP_APPID:}}
+    mch-id: ${WECHAT_PAY_MCH_ID:}
+    mch-serial-no: ${WECHAT_PAY_MCH_SERIAL_NO:}
+    api-v3-key: ${WECHAT_PAY_API_V3_KEY:}
+    private-key-path: ${WECHAT_PAY_PRIVATE_KEY_PATH:}
+    private-key: ${WECHAT_PAY_PRIVATE_KEY:}
+    notify-base-url: ${WECHAT_PAY_NOTIFY_BASE_URL:}
+    pay-notify-path: ${WECHAT_PAY_PAY_NOTIFY_PATH:/payment/notify/wechat/pay}
+    refund-notify-path: ${WECHAT_PAY_REFUND_NOTIFY_PATH:/payment/notify/wechat/refund}
+    order-expire-minutes: ${WECHAT_PAY_ORDER_EXPIRE_MINUTES:15}

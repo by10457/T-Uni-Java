@@ -12,9 +12,9 @@ import t.uni.server.common.context.UserContext;
 import t.uni.server.domain.vo.auth.UserInfoVO;
 
 /**
- * 用户信息Controller
+ * 用户信息 Controller。
  * <p>
- * 需要认证后才能访问的接口
+ * 提供已登录用户资料查询入口，用户 ID 从 UserContext 获取。
  * </p>
  */
 @Tag(name = "用户信息", description = "用户信息相关接口（需认证）")
@@ -25,10 +25,15 @@ public class UserController {
 
     private final IUserInfoService userInfoService;
 
+    /**
+     * 获取当前登录用户信息。
+     *
+     * @return 当前用户资料和新用户标记
+     */
     @Operation(summary = "获取当前用户信息", description = "获取当前登录用户的详细信息")
     @GetMapping("/getUserInfo")
     public Result<UserInfoVO> getUserInfo() {
-        // 从上下文获取当前用户ID
+        // 用户 ID 由认证拦截器解析 Token 后写入线程上下文。
         var userId = UserContext.getUserId();
         var userInfo = userInfoService.getUserInfo(userId);
         return Result.success(userInfo);

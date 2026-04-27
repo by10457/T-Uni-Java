@@ -8,7 +8,11 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 /**
- * 配置MP在修改和新增时的操作
+ * MyBatis-Plus 字段自动填充配置。
+ * <p>
+ * 在新增和更新时填充审计字段。用户信息来自可选的 UserContextProvider；
+ * 未接入登录上下文时只填充时间和删除标记，不强制依赖具体认证实现。
+ * </p>
  */
 @Component
 public class MybatisPlusFieldConfig implements MetaObjectHandler {
@@ -17,11 +21,12 @@ public class MybatisPlusFieldConfig implements MetaObjectHandler {
     private UserContextProvider userContextProvider;
 
     /**
-     * 使用mp做添加操作时候，这个方法执行
+     * 新增记录时填充删除标记、创建时间、更新时间和用户审计字段。
+     *
+     * @param metaObject MyBatis 元对象
      */
     @Override
     public void insertFill(MetaObject metaObject) {
-        // 设置属性值
         this.strictInsertFill(metaObject, "isDeleted", Integer.class, 0);
         this.setFieldValByName("createTime", LocalDateTime.now(), metaObject);
         this.setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
@@ -33,7 +38,9 @@ public class MybatisPlusFieldConfig implements MetaObjectHandler {
     }
 
     /**
-     * 使用mp做修改操作时候，这个方法执行
+     * 更新记录时填充更新时间和更新人。
+     *
+     * @param metaObject MyBatis 元对象
      */
     @Override
     public void updateFill(MetaObject metaObject) {

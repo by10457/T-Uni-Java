@@ -5,9 +5,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.ToIntFunction;
 
 /**
- * 加权随机选择器
+ * 加权随机选择器。
  * <p>
- * 根据权重进行随机选择，权重越大被选中的概率越高
+ * 用于默认头像、昵称等候选池选择。权重越大，被选中的概率越高。
+ * 总权重小于等于 0 时退化为均匀随机，避免配置错误导致无法分配默认值。
  * </p>
  */
 public final class WeightedRandomSelector {
@@ -17,7 +18,7 @@ public final class WeightedRandomSelector {
     }
 
     /**
-     * 从列表中根据权重随机选择一个元素
+     * 从列表中根据权重随机选择一个元素。
      *
      * @param items        元素列表
      * @param weightGetter 获取权重的函数
@@ -29,20 +30,17 @@ public final class WeightedRandomSelector {
             return null;
         }
 
-        // 计算总权重
         var totalWeight = items.stream()
                 .mapToInt(weightGetter)
                 .sum();
 
         if (totalWeight <= 0) {
-            // 如果总权重为0，随机返回一个元素
+            // 权重配置不可用时仍返回候选值，避免登录建档失败。
             return items.get(ThreadLocalRandom.current().nextInt(items.size()));
         }
 
-        // 生成随机数 [0, totalWeight)
         var random = ThreadLocalRandom.current().nextInt(totalWeight);
 
-        // 累加权重直到超过随机数
         var cumulative = 0;
         for (var item : items) {
             cumulative += weightGetter.applyAsInt(item);
@@ -51,7 +49,7 @@ public final class WeightedRandomSelector {
             }
         }
 
-        // 理论上不会执行到这里，返回最后一个元素作为兜底
+        // 理论兜底：应只在权重函数返回异常值时触达。
         return items.get(items.size() - 1);
     }
 }

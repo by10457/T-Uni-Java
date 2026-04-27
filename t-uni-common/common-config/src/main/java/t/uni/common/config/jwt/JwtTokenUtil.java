@@ -15,16 +15,17 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * JWT Token 工具类
+ * JWT Token 工具类。
  * <p>
- * 提供 JWT token 的创建、解析、验证等功能
- * 支持 admin 和 server 两端使用
+ * 提供 Token 创建、解析、校验和刷新能力，签名密钥由 JwtKeyHolder 从配置注入。
+ * 只处理 JWT 的结构和签名校验，不负责登录态存储、刷新令牌持久化或权限判断。
+ * claims 中不要放入密码、手机号、密钥等敏感原文。
  * </p>
  */
 public class JwtTokenUtil {
 
     /**
-     * 默认过期时间：1天（毫秒）
+     * 默认单日毫秒数，用于按天计算过期时间。
      */
     private static final long TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000L;
 
@@ -34,16 +35,17 @@ public class JwtTokenUtil {
     private static final int DEFAULT_EXPIRE_DAYS = 7;
 
     /**
-     * 默认业务
+     * 默认主题，用于区分本系统签发的 Token。
      */
     private static final String DEFAULT_SUBJECT = "T-Uni";
 
     // ==================== 创建 Token ====================
 
     /**
-     * 根据用户ID和用户名创建 token（默认7天过期）
+     * 根据用户 ID 创建 Token。
      *
      * @param userId 用户ID
+     * @param days   过期天数
      * @return JWT token
      */
     public static String createToken(Long userId, Integer days) {
@@ -98,6 +100,9 @@ public class JwtTokenUtil {
 
     /**
      * 使用 Map 创建 token（默认7天过期）
+     * <p>
+     * claims 会直接写入 Token 载荷，调用方负责过滤敏感字段。
+     * </p>
      *
      * @param claims 自定义声明
      * @return JWT token
@@ -108,6 +113,9 @@ public class JwtTokenUtil {
 
     /**
      * 使用 Map 创建 token，指定过期天数
+     * <p>
+     * claims 会直接写入 Token 载荷，调用方负责过滤敏感字段。
+     * </p>
      *
      * @param claims 自定义声明
      * @param days   过期天数
@@ -126,6 +134,9 @@ public class JwtTokenUtil {
 
     /**
      * 使用 Map 创建 token，指定过期时间
+     * <p>
+     * claims 会直接写入 Token 载荷，调用方负责过滤敏感字段。
+     * </p>
      *
      * @param claims     自定义声明
      * @param expireTime 过期时间
@@ -144,6 +155,9 @@ public class JwtTokenUtil {
 
     /**
      * 使用自定义主题创建 token
+     * <p>
+     * claims 会直接写入 Token 载荷，调用方负责过滤敏感字段。
+     * </p>
      *
      * @param claims  自定义声明
      * @param subject 主题
@@ -168,6 +182,7 @@ public class JwtTokenUtil {
      *
      * @param token JWT token
      * @return 用户ID
+     * @throws BaseException token 缺失、过期、签名无效或不包含 userId 时抛出
      */
     public static Long getUserId(String token) {
         Claims claims = parseToken(token);
@@ -213,6 +228,9 @@ public class JwtTokenUtil {
 
     /**
      * 从 token 获取所有声明（Map 形式）
+     * <p>
+     * 返回值包含 JWT 标准字段和业务自定义字段，调用方输出日志前需要自行脱敏。
+     * </p>
      *
      * @param token JWT token
      * @return 声明 Map
@@ -316,6 +334,9 @@ public class JwtTokenUtil {
 
     /**
      * 刷新 token（使用原 token 的声明创建新 token）
+     * <p>
+     * 仅复制声明并重签新过期时间，不检查服务端会话、黑名单或刷新令牌状态。
+     * </p>
      *
      * @param token 原 JWT token
      * @return 新 JWT token
@@ -326,6 +347,9 @@ public class JwtTokenUtil {
 
     /**
      * 刷新 token，指定过期天数
+     * <p>
+     * 仅复制声明并重签新过期时间，不检查服务端会话、黑名单或刷新令牌状态。
+     * </p>
      *
      * @param token 原 JWT token
      * @param days  过期天数
@@ -334,7 +358,7 @@ public class JwtTokenUtil {
     public static String refreshToken(String token, Integer days) {
         Claims claims = parseToken(token);
         Map<String, Object> newClaims = new HashMap<>(claims);
-        // 移除原有的过期时间等系统字段
+        // 移除标准声明，避免旧 Token 的过期时间和 ID 被原样继承。
         newClaims.remove("exp");
         newClaims.remove("iat");
         newClaims.remove("jti");
@@ -344,10 +368,7 @@ public class JwtTokenUtil {
     // ==================== 私有方法 ====================
 
     /**
-     * 获取 JWT 密钥
-     * <p>
-     * 从配置文件中读取的密钥（通过 JwtKeyHolder 管理）
-     * </p>
+     * 获取当前应用初始化后的 JWT 签名密钥。
      *
      * @return JWT 密钥
      */
@@ -356,10 +377,14 @@ public class JwtTokenUtil {
     }
 
     /**
-     * 解析 token 获取 Claims
+     * 解析并校验 Token 签名。
+     * <p>
+     * 解析失败统一转换为业务异常，避免上层暴露 jjwt 内部异常细节。
+     * </p>
      *
      * @param token JWT token
      * @return Claims
+     * @throws BaseException token 缺失、过期或签名校验失败时抛出
      */
     private static Claims parseToken(String token) {
         if (!StringUtils.hasText(token)) {

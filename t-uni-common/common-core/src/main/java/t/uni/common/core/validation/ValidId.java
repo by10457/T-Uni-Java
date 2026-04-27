@@ -9,7 +9,8 @@ import java.lang.annotation.*;
  * ID 格式校验注解
  * <p>
  * 用于校验字符串类型的 ID 字段，确保可以安全转换为 Long 类型。
- * 规则：1-19位数字，首位不能为0，不超过 Long.MAX_VALUE
+ * 规则：1-19 位数字，首位不能为 0，不超过 Long.MAX_VALUE。
+ * null 值交给 @NotNull / @NotBlank 控制，本注解只约束格式边界。
  * </p>
  *
  * <h3>使用示例</h3>
@@ -28,7 +29,7 @@ import java.lang.annotation.*;
 public @interface ValidId {
 
     /**
-     * 错误消息
+     * 校验失败时返回的提示信息。
      */
     String message() default "ID格式无效";
 

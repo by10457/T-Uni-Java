@@ -10,7 +10,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 新用户默认昵称池实体
+ * 新用户默认昵称池实体。
+ * <p>
+ * 用于注册初始化时为缺少昵称的用户提供候选值。
+ * </p>
  */
 @Data
 @TableName("core_user_default_nick_name")

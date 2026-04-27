@@ -1,7 +1,11 @@
 package t.uni.server.domain.constant;
 
 /**
- * 认证相关常量
+ * 轻量 API 认证相关常量。
+ * <p>
+ * 覆盖 JWT 声明、请求头约定、Token 有效期和认证缓存 Key。
+ * 与后台 RBAC 权限常量保持分离。
+ * </p>
  */
 public final class AuthConstant {
 
@@ -10,7 +14,6 @@ public final class AuthConstant {
      */
     public static final int ACCESS_TOKEN_EXPIRE_HOURS = 2;
 
-    // ==================== Token 相关 ====================
     /**
      * Refresh Token 有效期（天）
      */
@@ -29,7 +32,6 @@ public final class AuthConstant {
      */
     public static final String REDIS_KEY_REFRESH_TOKEN = "wx:auth:refresh:";
 
-    // ==================== Redis Key 前缀 ====================
     /**
      * Refresh Token 反向索引前缀
      * 完整格式: wx:auth:refresh:token:{refreshToken}
@@ -48,7 +50,6 @@ public final class AuthConstant {
      */
     public static final String CLAIM_USER_ID = "userId";
 
-    // ==================== JWT Claims ====================
     /**
      * JWT 中的 OpenId 字段
      */
@@ -58,7 +59,6 @@ public final class AuthConstant {
      */
     public static final String HEADER_AUTHORIZATION = "Authorization";
 
-    // ==================== Header 相关 ====================
     /**
      * Bearer 前缀
      */
@@ -68,8 +68,6 @@ public final class AuthConstant {
      * 如果用户创建时间距离当前时间小于等于此值，判定为新用户
      */
     public static final int NEW_USER_THRESHOLD_MINUTES = 2;
-
-    // ==================== 新用户判定 ====================
 
     private AuthConstant() {
         // 工具类禁止实例化

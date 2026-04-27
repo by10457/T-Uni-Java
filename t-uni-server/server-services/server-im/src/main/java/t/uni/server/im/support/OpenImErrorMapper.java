@@ -6,6 +6,8 @@ import t.uni.server.im.ImResultCodeEnum;
 
 /**
  * OpenIM 错误码映射
+ * <p>
+ * 只维护当前 IM 模块显式依赖的 OpenIM 错误码。未知错误统一映射为通用 OpenIM 请求失败。
  *
  * @author t-uni
  * @since 2026-04-24
@@ -23,6 +25,9 @@ public enum OpenImErrorMapper {
     private final ImResultCodeEnum resultCodeEnum;
     private final String desc;
 
+    /**
+     * 判断 OpenIM 是否返回用户未导入。
+     */
     public static boolean isRecordNotFound(Integer errCode) {
         return errCode != null && errCode.equals(RECORD_NOT_FOUND.openimCode);
     }
@@ -34,6 +39,12 @@ public enum OpenImErrorMapper {
         return errCode != null && errCode.equals(USER_ALREADY_REGISTERED.openimCode);
     }
 
+    /**
+     * 将 OpenIM 错误码映射为 IM 模块错误码。
+     *
+     * @param errCode OpenIM 原始错误码
+     * @return IM 模块错误码，未知值返回通用请求失败
+     */
     public static ImResultCodeEnum map(Integer errCode) {
         if (errCode == null) {
             return ImResultCodeEnum.IM_OPENIM_REQUEST_FAIL;

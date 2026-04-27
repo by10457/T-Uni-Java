@@ -16,6 +16,8 @@
 
 - 七牛云
 - 管理后台后端
+- OpenIM
+- 微信支付
 
 ### 快速起本地依赖（可选）
 
@@ -65,11 +67,16 @@ source init_sql/init.sql
 - `core_user_default_avatar`
 - `core_user_default_nick_name`
 - `biz_user`
+- `core_payment_order`
+- `core_payment_transaction`
+- `core_payment_refund`
+- `core_payment_notify_log`
 
 说明：
 
 - `biz_user` 只是模板默认业务用户表
 - 如果你后续有自己的业务用户表，可以替换，但请保留 `core_user + 业务用户表` 双表边界
+- 支付表是可选支付模块使用的通用 core 表，不绑定具体业务订单表
 
 ### Step 2. 配置环境变量
 
@@ -151,7 +158,44 @@ Authorization: Bearer <accessToken>
 - `POST /api/wechat/getPhone`
 - `POST /api/auth/refreshToken`
 
-## 3. 管理端可选路径
+## 3. 微信支付可选路径
+
+默认 `payment.wechat.enabled=false`，不影响最小启动路径。需要接入微信小程序 JSAPI 支付时再启用。
+
+### Step 1. 配置微信支付环境变量
+
+```bash
+export WECHAT_PAY_ENABLED=true
+export WECHAT_PAY_APP_ID=$WX_MINIAPP_APPID
+export WECHAT_PAY_MCH_ID=your_mch_id
+export WECHAT_PAY_MCH_SERIAL_NO=your_mch_serial_no
+export WECHAT_PAY_API_V3_KEY=your_api_v3_key
+export WECHAT_PAY_PRIVATE_KEY_PATH=/secure/apiclient_key.pem
+export WECHAT_PAY_NOTIFY_BASE_URL=https://api.example.com
+```
+
+也可以用 `WECHAT_PAY_PRIVATE_KEY` 直接传私钥内容，和 `WECHAT_PAY_PRIVATE_KEY_PATH` 二选一。
+
+### Step 2. 实现业务支付处理器
+
+业务模块实现 `PaymentBizHandler`，处理自己的业务锁单、支付成功、关单、退款成功和退款失败逻辑。
+
+接口入口：
+
+- `POST /api/payment/wechat/lock`
+- `POST /api/payment/wechat/prepay`
+- `GET /api/payment/orders/{orderNo}`
+
+微信回调：
+
+- `POST /api/payment/notify/wechat/pay`
+- `POST /api/payment/notify/wechat/refund`
+
+退款默认不开放用户接口，由业务或后台调用 `PaymentRefundService.applyRefund(...)`。
+
+更完整说明见 [payment-wechat.md](payment-wechat.md)。
+
+## 4. 管理端可选路径
 
 如果你需要后台管理端后端，再额外做下面几步。
 
@@ -232,7 +276,7 @@ POST /api/user/login
 }
 ```
 
-## 4. 常见坑
+## 5. 常见坑
 
 ### JWT 密钥错误
 

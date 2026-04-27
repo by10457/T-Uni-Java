@@ -2,12 +2,12 @@
 
 `T-Uni-Java` 是一个面向“微信小程序服务端 + 可选管理后台”的多模块 Java 模板仓库。
 
-这个仓库的目标不是复刻 `wxy-server` 的全部业务，而是沉淀一套适合二次定制、适合 AI 接手、也适合开源发布的模板基线：
+这个仓库的目标是沉淀一套适合二次定制、适合 AI 接手、也适合开源发布的模板基线：
 
 - 默认主路径聚焦 `t-uni-common` 和 `t-uni-server`
 - `t-uni-admin` 保留为可选后台能力，不作为模板主叙事
 - 保留 `core_user + biz_user` 双表模型，方便后续替换业务用户表
-- 不内置 `social-server` / `hygiene-server` 那类强业务耦合实现
+- 不内置强业务耦合实现
 
 ## 这份模板包含什么
 
@@ -16,15 +16,16 @@
 - MyBatis-Plus、Redis、Knife4j、微信小程序 SDK
 - 可选的七牛云基础能力
 - 可选的 OpenIM 即时通讯基础能力
+- 可选的微信支付能力
 - 可选的管理后台后端
 - 面向 AI 的 Prompt / Skill / 上下文文档
 
 ## 这份模板当前不包含什么
 
 - 业务域模型与业务表全量复制
-- 默认接入支付、业务消息通知
+- 默认接入业务消息通知
 - 默认开放完整后台前端
-- 把 `wxy-server` 的历史兼容逻辑直接照搬进主链路
+- 把具体业务项目的历史兼容逻辑直接照搬进主链路
 
 这些暂不纳入主模板的事项，统一记录在 [TODO.md](TODO.md)。
 
@@ -33,7 +34,7 @@
 - `t-uni-common`
   说明：共享基础能力，包含返回结构、异常、校验、Redis / MyBatis / Qiniu 等配置。
 - `t-uni-server`
-  说明：小程序服务端主路径，重点是登录鉴权、用户基础模型、模板 API 能力，可按需启用 `server-im`。
+  说明：小程序服务端主路径，重点是登录鉴权、用户基础模型、模板 API 能力，可按需启用 `server-im` 与 `server-payment`。
 - `t-uni-admin`
   说明：可选管理后台后端，适合需要后台管理时再接入；它不是模板主路径，后续可考虑拆成独立仓库。
 - `init_sql`
@@ -156,6 +157,23 @@ docker compose up -d
 
 更细的说明见 [docs/im-openim.md](docs/im-openim.md)。
 
+### 5. 微信支付接入
+
+当前微信支付能力是可选装配，默认 `payment.wechat.enabled=false`。
+
+启用后模板提供：
+
+- `/payment/wechat/lock` JSAPI 锁单 + 预下单 + 支付参数生成
+- `/payment/wechat/prepay` 已有支付单重新生成支付参数
+- `/payment/orders/{orderNo}` 支付状态查询
+- `/payment/notify/wechat/pay` 支付回调验签、解析、幂等落库
+- `/payment/notify/wechat/refund` 退款回调验签、解析、幂等落库
+- `PaymentRefundService` 退款申请能力，不默认开放用户退款接口
+- `PaymentBizHandler` SPI：业务方实现支付/退款/关单事件钩子
+- 超时未支付自动查单关单调度
+
+更细的说明见 [docs/payment-wechat.md](docs/payment-wechat.md)。
+
 ## 当前已知注意事项
 
 - 服务端默认端口是 `10457`
@@ -167,4 +185,4 @@ docker compose up -d
 
 ## 后续规划
 
-支付、业务消息通知这类能力暂不直接塞进主模板，原因和后续模块化方案见 [TODO.md](TODO.md)。OpenIM 已作为可选模块提供最小模板能力。
+业务消息通知这类能力暂不直接塞进主模板，原因和后续模块化方案见 [TODO.md](TODO.md)。支付与 OpenIM 已作为可选模块提供最小模板能力。

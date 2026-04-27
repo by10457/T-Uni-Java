@@ -9,10 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * JWT 密钥持有者
+ * JWT 签名密钥持有者。
  * <p>
- * 在应用启动时从配置文件读取 JWT 密钥，并提供静态访问方法供工具类使用
- * 使用 AtomicReference 实现线程安全的静态密钥管理（兼容 JDK 17+）
+ * 在 Spring 初始化时把配置密钥转换为 SecretKey，并提供静态访问给 JwtTokenUtil。
+ * 只保存派生后的密钥对象，不在日志中输出密钥原文。
  * </p>
  */
 @Slf4j
@@ -20,29 +20,28 @@ import java.util.concurrent.atomic.AtomicReference;
 public class JwtKeyHolder {
 
     /**
-     * 静态密钥字段（使用 AtomicReference 确保线程安全）
+     * 静态密钥引用，供非 Spring 管理的静态工具方法读取。
      */
     private static final AtomicReference<SecretKey> KEY = new AtomicReference<>();
 
     /**
-     * 构造函数：在 Spring 初始化时执行
+     * 初始化 JWT 签名密钥。
      *
      * @param properties JWT 配置属性
+     * @throws IllegalStateException 密钥缺失或长度不足时抛出，阻止应用以不安全配置启动
      */
     public JwtKeyHolder(JwtProperties properties) {
         String secret = properties.getSecret();
 
-        // 校验密钥是否配置
+        // 启动期强校验，避免运行时签发弱签名 Token。
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("JWT密钥未配置：请在配置文件中设置 t.uni.jwt.secret（至少256位/32字节）");
         }
 
-        // 校验密钥长度
         if (secret.length() < 32) {
             throw new IllegalStateException("JWT密钥长度不足：必须至少32字节（256位），当前长度：" + secret.length());
         }
 
-        // 创建密钥对象并设置到静态字段
         SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         KEY.set(secretKey);
 
@@ -50,12 +49,10 @@ public class JwtKeyHolder {
     }
 
     /**
-     * 获取 JWT 密钥（静态方法）
-     * <p>
-     * 供静态工具类 JwtTokenUtil 使用
-     * </p>
+     * 获取已初始化的 JWT 签名密钥。
      *
      * @return JWT 密钥
+     * @throws IllegalStateException JwtKeyHolder 尚未由 Spring 初始化时抛出
      */
     public static SecretKey getKey() {
         SecretKey key = KEY.get();

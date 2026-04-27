@@ -22,12 +22,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Token 服务实现
+ * Token 服务实现。
  * <p>
- * 实现双 Token 机制 + 两层缓存
- * - AccessToken: 2小时过期（JWT）
- * - RefreshToken: 7天过期（UUID）
- * - 分别存储 accessExpireTimeMs 和 refreshExpireTimeMs
+ * 维护微信登录的双 Token 和 Redis 缓存：
+ * AccessToken 是短期 JWT，RefreshToken 是长期随机串。
+ * Redis 中同时保存 userId -> Token Hash 与 refreshToken -> userId 反向索引，
+ * openId -> userId 的登录缓存由 cacheUserInfo 维护。
  * </p>
  */
 @Slf4j
@@ -38,19 +38,26 @@ public class TokenServiceImpl implements TokenService {
     private final RedisUtil redisUtil;
     private final CoreUserMapper coreUserMapper;
 
+    /**
+     * 为用户生成新的 AccessToken 与 RefreshToken。
+     * <p>
+     * 会覆盖该用户现有 Token Hash，并建立新的 refreshToken 反向索引。
+     * </p>
+     *
+     * @param userId 核心用户 ID
+     * @param openId 微信小程序 openId
+     * @return 双 Token 与有效期秒数
+     */
     @Override
     public TokenVO generateTokens(Long userId, String openId) {
-        // 1. 生成 Access Token（JWT），2小时过期
+        // AccessToken 使用 JWT，RefreshToken 使用不可预测随机串。
         var accessToken = JwtTokenUtil.createTokenWithHours(userId, AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
 
-        // 2. 生成 Refresh Token（UUID）
         var refreshToken = UUID.randomUUID().toString().replace("-", "");
 
-        // 3. 计算有效期（秒）- AccessToken 2小时，RefreshToken 7天
         long accessExpiresIn = TimeUnit.HOURS.toSeconds(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
         long refreshExpiresIn = TimeUnit.DAYS.toSeconds(AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS);
 
-        // 4. 构建 TokenVO
         var tokenVO = TokenVO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -58,7 +65,7 @@ public class TokenServiceImpl implements TokenService {
                 .refreshExpiresIn(refreshExpiresIn)
                 .build();
 
-        // 5. 缓存 Token 信息到 Redis Hash（永久存储，取出时检查过期）
+        // Hash 本身不依赖 Redis TTL，读取时按绝对过期时间判断。
         cacheToken(userId, tokenVO, openId);
 
         log.info("为用户 {} 生成双Token成功，AccessToken {}小时，RefreshToken {}天",
@@ -66,13 +73,23 @@ public class TokenServiceImpl implements TokenService {
         return tokenVO;
     }
 
+    /**
+     * 使用 RefreshToken 换发双 Token。
+     * <p>
+     * 刷新时先通过反向索引定位用户，再校验用户状态和 Token Hash 中的 RefreshToken。
+     * 新 RefreshToken 继承旧 RefreshToken 剩余有效期。
+     * </p>
+     *
+     * @param refreshToken 客户端提交的 RefreshToken
+     * @return 换发后的双 Token
+     */
     @Override
     public TokenVO refreshTokens(String refreshToken) {
         if (StrUtil.isBlank(refreshToken)) {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_EMPTY);
         }
 
-        // 1. 从缓存获取索引
+        // RefreshToken 不解析内容，只通过 Redis 反向索引定位用户。
         var indexKey = ServerRedisKeys.wxRefreshToken(refreshToken);
         var userIdStr = redisUtil.get(indexKey, String.class);
 
@@ -82,10 +99,9 @@ public class TokenServiceImpl implements TokenService {
 
         var userId = Long.valueOf(userIdStr);
 
-        // 2. 校验用户状态（是否被禁用或注销）
+        // 禁用或注销用户会同步清除 Token，避免继续刷新。
         validateUserStatus(userId);
 
-        // 3. 获取缓存的 Token 信息 (Redis Hash)
         var tokenKey = ServerRedisKeys.wxUserToken(userId);
         var tokenDataRaw = redisUtil.hGetAll(tokenKey);
 
@@ -93,13 +109,12 @@ public class TokenServiceImpl implements TokenService {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
         }
 
-        // 4. 校验 refreshToken 是否匹配
+        // 反向索引命中后仍校验 Hash，防止旧索引或串号数据误用。
         var storedRefreshToken = (String) tokenDataRaw.get("refreshToken");
         if (!refreshToken.equals(storedRefreshToken)) {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
         }
 
-        // 5. 获取 RefreshToken 过期时间，计算剩余时间
         var refreshExpireTimeObj = tokenDataRaw.get("refreshExpireTimeMs");
         long refreshExpireTimeMs = refreshExpireTimeObj instanceof Number
                 ? ((Number) refreshExpireTimeObj).longValue()
@@ -113,13 +128,21 @@ public class TokenServiceImpl implements TokenService {
         long refreshRemainingSeconds = refreshRemainingMs / 1000;
         var openId = (String) tokenDataRaw.get("openId");
 
-        // 6. 删除旧的反向索引
+        // 旧 RefreshToken 只能使用一次，换发前删除反向索引。
         redisUtil.delete(indexKey);
 
-        // 7. 生成新的双 Token：AccessToken 新2小时，RefreshToken 保持剩余时间
         return generateTokensWithTtl(userId, openId, refreshRemainingSeconds);
     }
 
+    /**
+     * 校验 AccessToken 并返回用户 ID。
+     * <p>
+     * 除 JWT 自身合法性外，还要求与 Redis 中当前 accessToken 一致，用于实现服务端主动失效。
+     * </p>
+     *
+     * @param accessToken 客户端提交的 AccessToken
+     * @return Token 归属的用户 ID
+     */
     @Override
     public Long validateAndGetUserId(String accessToken) {
         if (StrUtil.isBlank(accessToken)) {
@@ -140,6 +163,14 @@ public class TokenServiceImpl implements TokenService {
         return userId;
     }
 
+    /**
+     * 使指定用户当前登录 Token 失效。
+     * <p>
+     * 同时删除 userId -> Token Hash 和 refreshToken -> userId 反向索引。
+     * </p>
+     *
+     * @param userId 核心用户 ID
+     */
     @Override
     public void invalidateToken(Long userId) {
         var tokenKey = ServerRedisKeys.wxUserToken(userId);
@@ -155,6 +186,16 @@ public class TokenServiceImpl implements TokenService {
         log.info("用户 {} 的Token已失效", userId);
     }
 
+    /**
+     * 获取 openId 对应的可用缓存 Token。
+     * <p>
+     * 会检查用户状态、Token Hash 完整性和绝对过期时间；缓存不可用时清理并返回 null，
+     * 由登录流程回落到数据库双表校验。
+     * </p>
+     *
+     * @param openId 微信小程序 openId
+     * @return 可复用 Token；缓存缺失或无效时返回 null
+     */
     @Override
     public TokenVO getCachedToken(String openId) {
         var userId = getCachedUserId(openId);
@@ -208,6 +249,7 @@ public class TokenServiceImpl implements TokenService {
         boolean refreshNeedsRenew = refreshRemainingMs < ServerRedisKeys.TOKEN_REFRESH_THRESHOLD_MS;
         boolean accessExpired = accessRemainingMs <= 0;
 
+        // AccessToken 过期或 RefreshToken 接近过期时，主动换发以减少客户端失败重试。
         if (refreshNeedsRenew || accessExpired) {
             if (accessExpired) {
                 log.info("用户 {} 的AccessToken已过期，重新生成双Token", userId);
@@ -245,6 +287,16 @@ public class TokenServiceImpl implements TokenService {
                 .build();
     }
 
+    /**
+     * 缓存微信登录身份到用户 ID 的映射。
+     * <p>
+     * 登录入口用该缓存从 openId 快速定位 userId，再读取 Token Hash。
+     * </p>
+     *
+     * @param openId  微信小程序 openId
+     * @param userId  核心用户 ID
+     * @param unionId 微信开放平台 unionId，可能为空
+     */
     @Override
     public void cacheUserInfo(String openId, Long userId, String unionId) {
         var key = ServerRedisKeys.wxUserInfo(openId);
@@ -256,14 +308,19 @@ public class TokenServiceImpl implements TokenService {
             userInfo.put("unionId", unionId);
         }
 
-        // 使用 Redis Hash 存储
+        // 使用 Hash 便于后续追加 unionId 等字段。
         redisUtil.hSetAll(key, userInfo);
     }
 
+    /**
+     * 从 openId 登录缓存中读取用户 ID。
+     *
+     * @param openId 微信小程序 openId
+     * @return 已缓存的用户 ID；未登录或缓存缺失时返回 null
+     */
     @Override
     public Long getCachedUserId(String openId) {
         var key = ServerRedisKeys.wxUserInfo(openId);
-        // 直接获取 Hash 中的 userId 字段
         var userIdObj = redisUtil.hGet(key, "userId");
 
         if (userIdObj == null) {
@@ -276,7 +333,10 @@ public class TokenServiceImpl implements TokenService {
     // ==================== 私有方法 ====================
 
     /**
-     * 校验用户状态
+     * 校验用户状态。
+     * <p>
+     * 刷新 Token 前必须确认用户仍存在且未禁用、未注销。
+     * </p>
      */
     private void validateUserStatus(Long userId) {
         var coreUser = coreUserMapper.selectById(userId);
@@ -297,7 +357,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     /**
-     * 更新最后登录时间
+     * 更新最后登录时间。
      */
     private void updateLastLoginTime(Long userId) {
         var coreUser = coreUserMapper.selectById(userId);
@@ -310,12 +370,15 @@ public class TokenServiceImpl implements TokenService {
     }
 
     /**
-     * 缓存 Token 信息到 Redis Hash
+     * 缓存 Token 信息到 Redis Hash。
+     * <p>
+     * Hash 保存绝对过期时间，反向索引用于 RefreshToken 快速定位用户。
+     * </p>
      */
     private void cacheToken(Long userId, TokenVO tokenVO, String openId) {
         var tokenKey = ServerRedisKeys.wxUserToken(userId);
 
-        // 计算绝对过期时间（毫秒）
+        // 绝对过期时间可避免 Redis TTL 与 Hash 数据不一致时误判。
         long currentTimeMs = System.currentTimeMillis();
         long accessExpireTimeMs = currentTimeMs + AuthConstant.ACCESS_TOKEN_EXPIRE_MS;
         long refreshExpireTimeMs = currentTimeMs + AuthConstant.REFRESH_TOKEN_EXPIRE_MS;
@@ -327,28 +390,25 @@ public class TokenServiceImpl implements TokenService {
         tokenData.put("refreshExpireTimeMs", refreshExpireTimeMs);
         tokenData.put("openId", openId);
 
-        // 使用 Redis Hash 存储 (永久存储，取出时检查过期)
         redisUtil.hSetAll(tokenKey, tokenData);
 
-        // 建立 refreshToken -> userId 的反向索引（用于刷新时查找）
         var indexKey = ServerRedisKeys.wxRefreshToken(tokenVO.getRefreshToken());
         redisUtil.set(indexKey, String.valueOf(userId));
     }
 
     /**
-     * 使用指定 TTL 生成双 Token
+     * 使用指定剩余时间生成双 Token。
+     * <p>
+     * 用于刷新 Token：AccessToken 重新给完整有效期，RefreshToken 沿用旧剩余时间。
+     * </p>
      */
     private TokenVO generateTokensWithTtl(Long userId, String openId, long refreshRemainingSeconds) {
-        // 1. 生成 Access Token（新的2小时）
         var accessToken = JwtTokenUtil.createTokenWithHours(userId, AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
 
-        // 2. 生成 Refresh Token
         var refreshToken = UUID.randomUUID().toString().replace("-", "");
 
-        // 3. 计算有效期（秒）
         long accessExpiresIn = TimeUnit.HOURS.toSeconds(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
 
-        // 4. 构建 TokenVO
         var tokenVO = TokenVO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -356,7 +416,6 @@ public class TokenServiceImpl implements TokenService {
                 .refreshExpiresIn(refreshRemainingSeconds)
                 .build();
 
-        // 5. 缓存 Token 信息（AccessToken 新2小时，RefreshToken 使用剩余时间）
         cacheTokenWithTtl(userId, tokenVO, openId, refreshRemainingSeconds);
 
         log.info("用户 {} 刷新Token成功，AccessToken {}小时，RefreshToken剩余 {} 秒",
@@ -365,12 +424,11 @@ public class TokenServiceImpl implements TokenService {
     }
 
     /**
-     * 使用指定 TTL 缓存 Token
+     * 使用指定剩余时间缓存 Token。
      */
     private void cacheTokenWithTtl(Long userId, TokenVO tokenVO, String openId, long refreshRemainingSeconds) {
         var tokenKey = ServerRedisKeys.wxUserToken(userId);
 
-        // 计算绝对过期时间
         long currentTimeMs = System.currentTimeMillis();
         long accessExpireTimeMs = currentTimeMs + AuthConstant.ACCESS_TOKEN_EXPIRE_MS;
         long refreshExpireTimeMs = currentTimeMs + refreshRemainingSeconds * 1000;
@@ -382,14 +440,15 @@ public class TokenServiceImpl implements TokenService {
         tokenData.put("refreshExpireTimeMs", refreshExpireTimeMs);
         tokenData.put("openId", openId);
 
-        // 使用 Redis Hash 存储
         redisUtil.hSetAll(tokenKey, tokenData);
 
-        // 建立反向索引
         var indexKey = ServerRedisKeys.wxRefreshToken(tokenVO.getRefreshToken());
         redisUtil.set(indexKey, String.valueOf(userId));
     }
 
+    /**
+     * 判断缓存中的用户是否仍可登录。
+     */
     private boolean isUserAvailable(Long userId) {
         var coreUser = coreUserMapper.selectById(userId);
         if (coreUser == null) {
@@ -399,6 +458,9 @@ public class TokenServiceImpl implements TokenService {
                 && !Integer.valueOf(1).equals(coreUser.getIsDisable());
     }
 
+    /**
+     * 清理 openId 登录缓存、用户 Token Hash 和 RefreshToken 反向索引。
+     */
     private void clearLoginCache(String openId, Long userId) {
         if (userId == null) {
             redisUtil.delete(ServerRedisKeys.wxUserInfo(openId));
@@ -412,6 +474,9 @@ public class TokenServiceImpl implements TokenService {
         redisUtil.delete(tokenKey, ServerRedisKeys.wxUserInfo(openId));
     }
 
+    /**
+     * 兼容 Redis 序列化可能带来的字符串引号差异，仅用于 Token 等值比较。
+     */
     private String normalizeTokenForCompare(String token) {
         if (token == null) {
             return "";

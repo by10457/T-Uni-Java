@@ -19,6 +19,9 @@ import t.uni.server.im.vo.ImTokenVO;
 
 /**
  * OpenIM Token 服务
+ * <p>
+ * 面向业务登录态签发 OpenIM user token。用户未同步到 OpenIM 时会先触发导入，
+ * 再在短时间内重试 token 获取；最终失败统一映射为 IM 模块错误码。
  *
  * @author t-uni
  * @since 2026-04-24
@@ -35,28 +38,33 @@ public class OpenImTokenService {
     private final OpenImUserSyncService openImUserSyncService;
     private final OpenImAdminTokenProvider openImAdminTokenProvider;
 
+    /**
+     * 获取当前业务用户的 OpenIM user token。
+     * <p>
+     * 该方法不创建本地用户，只在 OpenIM 用户缺失时按需导入。导入后 token 可用才会更新本地
+     * im_registered 标记，避免外部导入失败时提前标记成功。
+     *
+     * @param userId 本地用户 ID
+     * @param platformId OpenIM 平台枚举值
+     * @return 客户端连接 OpenIM 所需的 token 和公开地址
+     */
     public ImTokenVO getUserToken(Long userId, Integer platformId) {
-        // 1. 参数校验
         if (userId == null || platformId == null) {
             throw new BaseException(ResultCodeEnum.PARAM_ERROR);
         }
 
-        // 2. 查询用户信息
         var user = openImCoreUserMapper.selectById(userId);
         if (user == null) {
             throw new BaseException(ResultCodeEnum.USER_IS_EMPTY);
         }
 
-        // 3. 构建 OpenIM 用户ID并获取管理员Token
         var openimUserId = openImProperties.buildImUserId(userId);
         var adminToken = openImAdminTokenProvider.getAdminToken();
 
-        // 4. 获取用户Token
         var response = openImApiClient.getUserToken(adminToken, openimUserId, platformId);
         if (!response.isSuccess() && OpenImErrorMapper.isRecordNotFound(response.getErrCode())) {
-            // 4.1 用户未导入则先注册
             openImUserSyncService.registerUser(user, openimUserId);
-            // 4.2 注册可能正在进行，需等待并重试
+            // OpenIM 导入存在短暂可见性延迟，注册后等待到短锁窗口结束前重试。
             response = retryGetUserTokenUntilAvailable(adminToken, openimUserId, platformId);
         }
         if (!response.isSuccess()) {
@@ -64,19 +72,16 @@ public class OpenImTokenService {
             throw new BaseException(resultCode.getCode(), "获取OpenIM user token失败: " + response.getErrMsg());
         }
 
-        // 5. 解析Token结果
         var tokenResult = parseTokenResult(response);
         if (tokenResult == null || StrUtil.isBlank(tokenResult.getToken())) {
             throw new BaseException(ImResultCodeEnum.IM_OPENIM_USER_TOKEN_FAIL.getCode(),
                 ImResultCodeEnum.IM_OPENIM_USER_TOKEN_FAIL.getMessage());
         }
 
-        // 6. 标记用户已注册IM
         if (!Boolean.TRUE.equals(user.getImRegistered())) {
             openImUserSyncService.markRegistered(userId);
         }
 
-        // 7. 构建并返回TokenVO
         return new ImTokenVO(
             openimUserId,
             tokenResult.getToken(),
@@ -87,6 +92,11 @@ public class OpenImTokenService {
         );
     }
 
+    /**
+     * 解析 OpenIM token 数据。
+     * <p>
+     * 兼容不同 OpenIM 版本中 expireTimeSeconds 与 expireTime 的字段名差异。
+     */
     private OpenImTokenResult parseTokenResult(OpenImApiResponse response) {
         if (response == null || response.getData() == null) {
             return null;
@@ -100,6 +110,11 @@ public class OpenImTokenService {
         return new OpenImTokenResult(token, expireTime);
     }
 
+    /**
+     * 用户刚导入后轮询获取 token。
+     * <p>
+     * 最长等待时间与用户注册短锁 TTL 对齐，避免接口线程长期阻塞。
+     */
     private OpenImApiResponse retryGetUserTokenUntilAvailable(String adminToken, String openimUserId, Integer platformId) {
         var maxWaitMs = Math.max(200L, openImProperties.getUserRegisterLockSeconds() * 1000L);
         var start = System.currentTimeMillis();
@@ -118,6 +133,9 @@ public class OpenImTokenService {
         }
     }
 
+    /**
+     * 指数退避间隔，限制单次等待上限。
+     */
     private long calcRetrySleepMs(int attempt) {
         var base = 100L;
         var cap = 1000L;
@@ -125,6 +143,9 @@ public class OpenImTokenService {
         return Math.min(cap, base * (1L << shift));
     }
 
+    /**
+     * 保留中断标记，避免吞掉调用线程的取消信号。
+     */
     private void sleepQuietly(long sleepMs) {
         try {
             Thread.sleep(sleepMs);

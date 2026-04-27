@@ -15,6 +15,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * OpenIM admin token 管理（JVM 内存缓存）
+ * <p>
+ * 仅在 openim.enabled=true 时装配。缓存只在当前 JVM 内生效，集群节点各自刷新。
+ * 获取失败会抛出业务异常，调用方不应使用空 token 继续访问 OpenIM。
  *
  * @author t-uni
  * @since 2026-04-24
@@ -32,6 +35,13 @@ public class OpenImAdminTokenProvider {
     private volatile String cachedToken;
     private volatile long expireAtMs;
 
+    /**
+     * 获取可用的 OpenIM admin token。
+     * <p>
+     * 过期前按配置提前刷新；并发刷新通过本地锁收敛为一次外部请求。
+     *
+     * @return 当前可用 admin token
+     */
     public String getAdminToken() {
         var now = System.currentTimeMillis();
         var refreshAheadMs = openImProperties.getAdminTokenRefreshAheadSeconds() * 1000L;
@@ -48,6 +58,7 @@ public class OpenImAdminTokenProvider {
             if (StrUtil.isNotBlank(cachedToken) && now < expireAtMs - refreshAheadMs) {
                 return cachedToken;
             }
+            // 双重检查后才访问 OpenIM，避免高并发下重复刷新 admin token。
             var response = openImApiClient.getAdminToken();
             if (!response.isSuccess()) {
                 throw new BaseException(ImResultCodeEnum.IM_OPENIM_ADMIN_TOKEN_FAIL.getCode(),

@@ -5,14 +5,14 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
- * Token 刷新请求 DTO
+ * Token 刷新请求 DTO。
  */
 @Data
 @Schema(description = "Token刷新请求")
 public class RefreshTokenDTO {
 
     /**
-     * Refresh Token
+     * Refresh Token，由登录或上次刷新接口签发
      */
     @NotBlank(message = "refreshToken不能为空")
     @Schema(description = "刷新令牌", requiredMode = Schema.RequiredMode.REQUIRED)

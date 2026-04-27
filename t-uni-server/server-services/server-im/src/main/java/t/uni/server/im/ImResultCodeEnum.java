@@ -6,7 +6,8 @@ import lombok.Getter;
 /**
  * IM 模块专属错误码（5200-5299）
  * <p>
- * 不放入 common-core 的 ResultCodeEnum，遵守"端专属状态码放各自模块"的硬规则
+ * 不放入 common-core 的 ResultCodeEnum，遵守"端专属状态码放各自模块"的硬规则。
+ * 主要覆盖 OpenIM 外部接口、用户同步、Webhook 鉴权和通知发送失败。
  *
  * @author t-uni
  * @since 2026-04-24
@@ -25,6 +26,9 @@ public enum ImResultCodeEnum {
     IM_CONFIG_MISSING(5208, "OpenIM 配置缺失"),
     ;
 
+    /** 对外返回的业务错误码 */
     private final Integer code;
+
+    /** 对外返回的默认错误文案 */
     private final String message;
 }

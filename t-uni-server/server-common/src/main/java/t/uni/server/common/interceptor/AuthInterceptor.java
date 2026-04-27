@@ -14,9 +14,10 @@ import t.uni.server.common.context.UserContext;
 import t.uni.server.domain.constant.AuthConstant;
 
 /**
- * 认证拦截器
+ * 轻量 API 认证拦截器。
  * <p>
- * 验证 JWT Token 并将用户信息存入上下文
+ * 负责校验请求头中的 Bearer Access Token，并把用户 ID 写入 {@link UserContext}。
+ * 本拦截器只处理登录态识别，不承载后台 RBAC 权限判断。
  * </p>
  */
 @Slf4j
@@ -26,34 +27,41 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private final TokenService tokenService;
 
+    /**
+     * 请求进入业务处理前校验 Access Token。
+     *
+     * @return 校验通过返回 true；缺少或无效 Token 时抛出业务异常
+     */
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request,
                              @NotNull HttpServletResponse response,
                              @NotNull Object handler) {
-        // 1. 获取 Authorization 请求头
+        // 仅接受标准 Bearer Token，避免把其他 Authorization 方案误当作登录态。
         var authHeader = request.getHeader(AuthConstant.HEADER_AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith(AuthConstant.TOKEN_PREFIX)) {
             throw new BaseException(ResultCodeEnum.TOKEN_NOT_PROVIDED);
         }
 
-        // 2. 提取 Token
         var accessToken = authHeader.substring(AuthConstant.TOKEN_PREFIX.length());
 
-        // 3. 验证 Token 并获取用户ID
         var userId = tokenService.validateAndGetUserId(accessToken);
 
-        // 4. 将用户ID存入上下文
         UserContext.setUserId(userId);
 
         log.debug("用户 {} 认证通过", userId);
         return true;
     }
 
+    /**
+     * 请求结束后清理线程上下文。
+     * <p>
+     * 无论业务处理成功或失败都要执行，防止容器线程复用导致用户 ID 泄漏。
+     * </p>
+     */
     @Override
     public void afterCompletion(@NotNull HttpServletRequest request,
                                 @NotNull HttpServletResponse response,
                                 @NotNull Object handler, Exception ex) {
-        // 请求结束后清理上下文，避免内存泄漏
         UserContext.clear();
     }
 }

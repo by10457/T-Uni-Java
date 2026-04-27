@@ -6,6 +6,8 @@ import lombok.Data;
 
 /**
  * IM Token 请求 DTO
+ * <p>
+ * 由客户端声明当前登录 OpenIM 的平台类型，服务端据此向 OpenIM 签发对应平台 token。
  *
  * @author t-uni
  * @since 2026-04-24
@@ -14,6 +16,7 @@ import lombok.Data;
 @Schema(description = "IM Token 请求")
 public class ImTokenRequestDTO {
 
+    /** OpenIM 平台枚举值，如 Web、iOS、Android 等 */
     @NotNull(message = "platformId不能为空")
     @Schema(description = "平台ID（OpenIM 平台枚举）", example = "6")
     private Integer platformId;
