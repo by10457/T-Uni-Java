@@ -1,9 +1,10 @@
 package t.uni.server.im.constant;
 
 /**
- * IM 模块 Redis Key 常量
+ * IM 模块 Redis 逻辑 Key 常量
  * <p>
- * 仅放置 IM 内部使用的 key 生成规则，避免与其他模块共享 Redis 命名细节。
+ * 仅生成 IM 内部使用的 Redis 逻辑 key，物理 namespace 由 common Redis 配置统一处理。
+ * </p>
  *
  * @author t-uni
  * @since 2026-04-24

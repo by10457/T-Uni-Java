@@ -7,6 +7,7 @@
 - 默认主路径聚焦 `t-uni-common` 和 `t-uni-server`
 - `t-uni-admin` 保留为可选后台能力，不作为模板主叙事
 - 保留 `core_user + biz_user` 双表模型，方便后续替换业务用户表
+- Redis key 支持项目级 namespace，允许多个模板派生项目共用 Redis 0
 - 不内置强业务耦合实现
 
 ## 这份模板包含什么
@@ -178,6 +179,7 @@ docker compose up -d
 
 - 服务端默认端口是 `10457`
 - 管理端默认端口是 `7840`
+- 多个模板派生项目共用 Redis 0 时，必须配置不同的 `T_UNI_REDIS_NAMESPACE`，不要靠默认裸 key 混用
 - `WX_AUTH_LOGIN_IDENTIFIER` 默认推荐保持 `MA_OPEN_ID`
 - 默认昵称池有示例数据，但默认头像池没有远程图片种子，首次登录头像可能为空
 - `t-uni-admin` 是可选能力，不接后台时可以只使用 `t-uni-server`

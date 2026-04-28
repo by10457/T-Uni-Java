@@ -92,6 +92,7 @@ export T_UNI_DB_PASSWORD=your_password
 export T_UNI_REDIS_HOST=localhost
 export T_UNI_REDIS_PORT=6379
 export T_UNI_REDIS_DATABASE=0
+export T_UNI_REDIS_NAMESPACE=tuni-local
 export T_UNI_REDIS_PASSWORD=
 
 export T_UNI_JWT_SECRET=replace_with_a_secret_at_least_32_bytes_long
@@ -104,7 +105,25 @@ export WX_MINIAPP_SECRET=your_secret
 
 - `T_UNI_JWT_SECRET` 不能为空
 - 长度至少 32 字节
+- `T_UNI_REDIS_NAMESPACE` 用于隔离 Redis 顶层 key；多个模板派生项目共用 Redis 0 时必须配置成不同值
 - 如果你把 `WX_AUTH_LOGIN_IDENTIFIER` 改成 `UNION_ID`，必须确认当前小程序场景稳定能拿到 `unionId`
+
+本地同时启动多个模板项目且都使用 Redis 0 时，可以这样区分：
+
+| 项目 | Redis DB | Redis namespace |
+| --- | --- | --- |
+| 项目 A | `0` | `project-a` |
+| 项目 B | `0` | `project-b` |
+
+```bash
+# 项目 A
+export T_UNI_REDIS_DATABASE=0
+export T_UNI_REDIS_NAMESPACE=project-a
+
+# 项目 B
+export T_UNI_REDIS_DATABASE=0
+export T_UNI_REDIS_NAMESPACE=project-b
+```
 
 ### Step 3. 启动服务端
 

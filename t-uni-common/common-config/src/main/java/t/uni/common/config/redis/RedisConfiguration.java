@@ -9,7 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -36,7 +36,7 @@ import java.time.format.DateTimeFormatter;
  * </p>
  */
 @Component
-@Slf4j
+@EnableConfigurationProperties(RedisNamespaceProperties.class)
 public class RedisConfiguration {
     /**
      * 创建通用 RedisTemplate。
@@ -45,12 +45,12 @@ public class RedisConfiguration {
      * @return 使用字符串 key 和 JSON value 的 RedisTemplate
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(LettuceConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(LettuceConnectionFactory connectionFactory,
+                                                        RedisKeyNamespace redisKeyNamespace) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(connectionFactory);
 
-        // 设置key序列化为string
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setKeySerializer(new NamespacedStringRedisSerializer(redisKeyNamespace));
         redisTemplate.setHashKeySerializer(new StringRedisSerializer());
 
         // 设置value序列化为JSON，使用GenericJackson2JsonRedisSerializer替换默认序列化
@@ -72,9 +72,11 @@ public class RedisConfiguration {
     @Bean
     @Primary
     @SuppressWarnings("all")
-    public CacheManager cacheManagerWithMouth(RedisConnectionFactory factory) {
+    public CacheManager cacheManagerWithMouth(RedisConnectionFactory factory,
+                                               RedisKeyNamespace redisKeyNamespace) {
         // 配置序列化
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .computePrefixWith(cacheName -> redisKeyNamespace.apply(cacheName + "::"))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonRedisSerializer()))
                 .entryTtl(Duration.ofDays(30));
@@ -90,9 +92,11 @@ public class RedisConfiguration {
      */
     @Bean
     @SuppressWarnings("all")
-    public CacheManager cacheManagerWithHalfOfMouth(RedisConnectionFactory factory) {
+    public CacheManager cacheManagerWithHalfOfMouth(RedisConnectionFactory factory,
+                                                     RedisKeyNamespace redisKeyNamespace) {
         // 配置序列化
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .computePrefixWith(cacheName -> redisKeyNamespace.apply(cacheName + "::"))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonRedisSerializer()))
                 .entryTtl(Duration.ofDays(15));
@@ -108,9 +112,11 @@ public class RedisConfiguration {
      */
     @Bean
     @SuppressWarnings("all")
-    public CacheManager cacheManagerWithHours(RedisConnectionFactory factory) {
+    public CacheManager cacheManagerWithHours(RedisConnectionFactory factory,
+                                               RedisKeyNamespace redisKeyNamespace) {
         // 配置序列化
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .computePrefixWith(cacheName -> redisKeyNamespace.apply(cacheName + "::"))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonRedisSerializer()))
                 .entryTtl(Duration.ofHours(1));

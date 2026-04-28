@@ -72,7 +72,19 @@ AI 必须先看：
 - 需要装配、需要中间件客户端的能力进 `common-config`
 - 带端语义、带业务语义、带存储命名的能力进具体模块
 
-## 6. 七牛这条不能只看类名猜设计
+## 6. Redis namespace 是模板隔离边界
+
+多个模板派生项目可以共用 Redis database 0，但必须配置不同的 `T_UNI_REDIS_NAMESPACE`。AI 不要建议通过切 Redis DB 作为唯一方案，也不要只给认证 key 单独拼前缀；namespace 应覆盖应用自有 Redis 顶层 key、Spring Cache、SCAN pattern 和 raw connection byte key。
+
+规则：
+
+- 常量类只生成 Redis 逻辑 key
+- 物理 namespace 由 `common-config` 的 Redis 配置统一处理
+- Hash field 不加 namespace
+- 不自动扫描、迁移或删除旧裸 key，避免误伤其他业务缓存
+- 认证缓存写入失败或写后校验失败应 fail fast，不返回后续必然 `ACCESS_TOKEN_INVALID` 的 token
+
+## 7. 七牛这条不能只看类名猜设计
 
 当前模板 common 层已经有七牛能力，并且已经支持：
 
@@ -94,7 +106,7 @@ AI 不要假设：
 - 对外再转可访问 URL
 - 不要假设所有历史字段都已经统一完成
 
-## 7. 支付 / 通知 / IM 边界
+## 8. 支付 / 通知 / IM 边界
 
 当前阶段：
 
@@ -102,7 +114,7 @@ AI 不要假设：
 - 通知：后续做轻量内核
 - IM：已作为 `server-im` 可选模块纳入，默认关闭，只提供 OpenIM 最小接入能力
 
-## 8. 状态码不要一上来硬重排
+## 9. 状态码不要一上来硬重排
 
 当前更重要的是：
 
@@ -112,7 +124,7 @@ AI 不要假设：
 
 不是立刻把所有数字全改成另一套码段。
 
-## 9. admin 专属能力不要回流 common
+## 10. admin 专属能力不要回流 common
 
 像下面这些能力：
 
@@ -122,7 +134,7 @@ AI 不要假设：
 
 应该留在 `t-uni-admin` 自己的枚举或模块里，不要再塞回 `common-core`。
 
-## 10. 碰 admin 代码时要谨慎
+## 11. 碰 admin 代码时要谨慎
 
 `t-uni-admin` 内部有较多历史代码，包括：
 

@@ -78,6 +78,17 @@
 
 如果要改 `biz_user` 的名字，请改“默认业务用户表实现”，不要破坏这条边界。
 
+## Redis key 边界
+
+模板允许多个派生项目共用 Redis database 0，但不能共用同一组裸 key。所有应用自有 Redis 顶层 key 都应通过 `t.uni.redis.namespace` 加项目级 namespace，例如 `project-a::wx:token:1`。
+
+约束：
+
+- 业务代码和常量类只生成 Redis 逻辑 key，不手动拼物理 namespace
+- `RedisTemplate` 顶层 key、Spring Cache prefix、SCAN pattern 和 raw Redis connection byte key 都必须 namespace-aware
+- Hash field 不加 namespace，例如 `accessToken`、`refreshToken`、`userId`、`openId` 保持原样
+- namespace 只影响 Redis key，不改变 JWT、微信 openId/unionId、OpenIM userID、七牛 object key、微信支付回调参数
+
 ## 认证边界
 
 服务端当前主链路是：

@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisUtil {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisKeyNamespace redisKeyNamespace;
 
     // =============================String操作=============================
 
@@ -1257,7 +1259,7 @@ public class RedisUtil {
             List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 for (String key : keys) {
                     if (key != null) {
-                        connection.hashCommands().hLen(key.getBytes());
+                        connection.hashCommands().hLen(redisKeyBytes(key));
                     } else {
                         connection.hashCommands().hLen(new byte[0]);
                     }
@@ -1290,11 +1292,11 @@ public class RedisUtil {
             return keys != null && !keys.isEmpty() ? keys.stream().map(k -> false).toList() : Collections.emptyList();
         }
         try {
-            byte[] fieldBytes = field.getBytes();
+            byte[] fieldBytes = field.getBytes(StandardCharsets.UTF_8);
             List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 for (String key : keys) {
                     if (key != null) {
-                        connection.hashCommands().hExists(key.getBytes(), fieldBytes);
+                        connection.hashCommands().hExists(redisKeyBytes(key), fieldBytes);
                     } else {
                         connection.hashCommands().hExists(new byte[0], fieldBytes);
                     }
@@ -1365,7 +1367,7 @@ public class RedisUtil {
      *
      * @param script     Lua脚本内容，不能为null
      * @param resultType 返回值类型
-     * @param keys       key列表，对应脚本中的KEYS数组
+     * @param keys       Redis 逻辑 key 列表，对应脚本中的 KEYS 数组；不要在 ARGV 中拼接 Redis key
      * @param args       参数列表，对应脚本中的ARGV数组
      * @param <T>        返回值类型
      * @return 脚本执行结果，异常时返回null
@@ -1393,7 +1395,7 @@ public class RedisUtil {
      *
      * @param scriptPath 脚本文件路径（相对于classpath），不能为null
      * @param resultType 返回值类型
-     * @param keys       key列表，对应脚本中的KEYS数组
+     * @param keys       Redis 逻辑 key 列表，对应脚本中的 KEYS 数组；不要在 ARGV 中拼接 Redis key
      * @param args       参数列表，对应脚本中的ARGV数组
      * @param <T>        返回值类型
      * @return 脚本执行结果，异常时返回null
@@ -1444,7 +1446,7 @@ public class RedisUtil {
      * 注意：Pipeline不是事务，不保证原子性。
      * </p>
      *
-     * @param callback Pipeline回调，不能为null
+     * @param callback Pipeline回调，不能为null；如果直接使用 RedisConnection 写 byte key，必须手动应用 RedisKeyNamespace
      * @return Pipeline执行结果列表
      */
     public List<Object> executePipeline(RedisCallback<?> callback) {
@@ -1457,5 +1459,9 @@ public class RedisUtil {
             log.error("Redis执行Pipeline失败", e);
             return Collections.emptyList();
         }
+    }
+
+    private byte[] redisKeyBytes(String key) {
+        return redisKeyNamespace.apply(key).getBytes(StandardCharsets.UTF_8);
     }
 }

@@ -1,9 +1,9 @@
 package t.uni.common.config.qiniu;
 
 /**
- * 七牛下载地址缓存 Key。
+ * 七牛下载地址缓存逻辑 Key。
  * <p>
- * 仅生成命名空间和缓存 key，不负责缓存读写。
+ * 仅生成 Redis 逻辑 key，物理 namespace 由 common Redis 配置统一处理。
  * </p>
  */
 public final class QiniuRedisKeys {

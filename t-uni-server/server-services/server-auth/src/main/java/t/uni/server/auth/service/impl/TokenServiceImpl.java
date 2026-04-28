@@ -18,6 +18,7 @@ import t.uni.server.domain.vo.auth.TokenVO;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +36,11 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
 
+    private static final int CACHE_SCHEMA_VERSION = 1;
+    private static final String TOKEN_CACHE_TYPE = "TUNI_WX_AUTH_TOKEN";
+    private static final String USER_INFO_CACHE_TYPE = "TUNI_WX_USER_INFO";
+    private static final long CACHE_TTL_BUFFER_SECONDS = 60L;
+
     private final RedisUtil redisUtil;
     private final CoreUserMapper coreUserMapper;
 
@@ -50,7 +56,6 @@ public class TokenServiceImpl implements TokenService {
      */
     @Override
     public TokenVO generateTokens(Long userId, String openId) {
-        // AccessToken 使用 JWT，RefreshToken 使用不可预测随机串。
         var accessToken = JwtTokenUtil.createTokenWithHours(userId, AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
 
         var refreshToken = UUID.randomUUID().toString().replace("-", "");
@@ -65,7 +70,6 @@ public class TokenServiceImpl implements TokenService {
                 .refreshExpiresIn(refreshExpiresIn)
                 .build();
 
-        // Hash 本身不依赖 Redis TTL，读取时按绝对过期时间判断。
         cacheToken(userId, tokenVO, openId);
 
         log.info("为用户 {} 生成双Token成功，AccessToken {}小时，RefreshToken {}天",
@@ -89,7 +93,6 @@ public class TokenServiceImpl implements TokenService {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_EMPTY);
         }
 
-        // RefreshToken 不解析内容，只通过 Redis 反向索引定位用户。
         var indexKey = ServerRedisKeys.wxRefreshToken(refreshToken);
         var userIdStr = redisUtil.get(indexKey, String.class);
 
@@ -97,38 +100,42 @@ public class TokenServiceImpl implements TokenService {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
         }
 
-        var userId = Long.valueOf(userIdStr);
+        var userId = parseLongOrNull(userIdStr);
+        if (userId == null) {
+            redisUtil.delete(indexKey);
+            throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
+        }
 
-        // 禁用或注销用户会同步清除 Token，避免继续刷新。
         validateUserStatus(userId);
 
         var tokenKey = ServerRedisKeys.wxUserToken(userId);
         var tokenDataRaw = redisUtil.hGetAll(tokenKey);
 
-        if (CollUtil.isEmpty(tokenDataRaw)) {
+        if (!isExpectedTokenCache(tokenDataRaw, userId)) {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
         }
 
-        // 反向索引命中后仍校验 Hash，防止旧索引或串号数据误用。
-        var storedRefreshToken = (String) tokenDataRaw.get("refreshToken");
+        var storedRefreshToken = stringValue(tokenDataRaw.get("refreshToken"));
         if (!refreshToken.equals(storedRefreshToken)) {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
         }
 
-        var refreshExpireTimeObj = tokenDataRaw.get("refreshExpireTimeMs");
-        long refreshExpireTimeMs = refreshExpireTimeObj instanceof Number
-                ? ((Number) refreshExpireTimeObj).longValue()
-                : Long.parseLong(String.valueOf(refreshExpireTimeObj));
+        var refreshExpireTimeMs = parseLongOrNull(tokenDataRaw.get("refreshExpireTimeMs"));
+        if (refreshExpireTimeMs == null) {
+            throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
+        }
         long refreshRemainingMs = refreshExpireTimeMs - System.currentTimeMillis();
 
         if (refreshRemainingMs <= 0) {
             throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_EXPIRED);
         }
 
-        long refreshRemainingSeconds = refreshRemainingMs / 1000;
-        var openId = (String) tokenDataRaw.get("openId");
+        long refreshRemainingSeconds = Math.max(1L, refreshRemainingMs / 1000);
+        var openId = stringValue(tokenDataRaw.get("openId"));
+        if (StrUtil.isBlank(openId)) {
+            throw new BaseException(ResultCodeEnum.REFRESH_TOKEN_INVALID);
+        }
 
-        // 旧 RefreshToken 只能使用一次，换发前删除反向索引。
         redisUtil.delete(indexKey);
 
         return generateTokensWithTtl(userId, openId, refreshRemainingSeconds);
@@ -154,9 +161,18 @@ public class TokenServiceImpl implements TokenService {
         }
 
         var userId = JwtTokenUtil.getUserId(accessToken);
-        var cachedAccessToken = redisUtil.hGet(ServerRedisKeys.wxUserToken(userId), "accessToken");
+        var tokenDataRaw = redisUtil.hGetAll(ServerRedisKeys.wxUserToken(userId));
+        if (!isExpectedTokenCache(tokenDataRaw, userId)) {
+            throw new BaseException(ResultCodeEnum.ACCESS_TOKEN_INVALID);
+        }
+
+        var accessExpireTimeMs = parseLongOrNull(tokenDataRaw.get("accessExpireTimeMs"));
+        if (accessExpireTimeMs == null || accessExpireTimeMs <= System.currentTimeMillis()) {
+            throw new BaseException(ResultCodeEnum.ACCESS_TOKEN_INVALID);
+        }
+
         var requestToken = normalizeTokenForCompare(accessToken);
-        var currentToken = normalizeTokenForCompare(cachedAccessToken == null ? null : String.valueOf(cachedAccessToken));
+        var currentToken = normalizeTokenForCompare(stringValue(tokenDataRaw.get("accessToken")));
         if (StrUtil.isBlank(currentToken) || !requestToken.equals(currentToken)) {
             throw new BaseException(ResultCodeEnum.ACCESS_TOKEN_INVALID);
         }
@@ -175,7 +191,6 @@ public class TokenServiceImpl implements TokenService {
     public void invalidateToken(Long userId) {
         var tokenKey = ServerRedisKeys.wxUserToken(userId);
 
-        // 获取并删除 refreshToken 的反向索引
         var refreshTokenObj = redisUtil.hGet(tokenKey, "refreshToken");
         if (refreshTokenObj != null) {
             var refreshToken = String.valueOf(refreshTokenObj);
@@ -209,25 +224,15 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
-        var tokenKey = ServerRedisKeys.wxUserToken(userId);
-        var tokenDataRaw = redisUtil.hGetAll(tokenKey);
+        var tokenDataRaw = redisUtil.hGetAll(ServerRedisKeys.wxUserToken(userId));
 
-        if (CollUtil.isEmpty(tokenDataRaw)) {
-            redisUtil.delete(ServerRedisKeys.wxUserInfo(openId));
-            return null;
-        }
-
-        var refreshExpireTimeObj = tokenDataRaw.get("refreshExpireTimeMs");
-        if (refreshExpireTimeObj == null) {
+        if (!isExpectedTokenCache(tokenDataRaw, userId) || !openId.equals(stringValue(tokenDataRaw.get("openId")))) {
             clearLoginCache(openId, userId);
             return null;
         }
 
-        long refreshExpireTimeMs = refreshExpireTimeObj instanceof Number ?
-                ((Number) refreshExpireTimeObj).longValue() : Long.parseLong(String.valueOf(refreshExpireTimeObj));
-
-        var openIdFromCache = tokenDataRaw.get("openId");
-        if (openIdFromCache == null) {
+        var refreshExpireTimeMs = parseLongOrNull(tokenDataRaw.get("refreshExpireTimeMs"));
+        if (refreshExpireTimeMs == null) {
             clearLoginCache(openId, userId);
             return null;
         }
@@ -241,15 +246,16 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
-        var accessExpireTimeObj = tokenDataRaw.get("accessExpireTimeMs");
-        long accessExpireTimeMs = accessExpireTimeObj instanceof Number ?
-                ((Number) accessExpireTimeObj).longValue() : Long.parseLong(String.valueOf(accessExpireTimeObj));
+        var accessExpireTimeMs = parseLongOrNull(tokenDataRaw.get("accessExpireTimeMs"));
+        if (accessExpireTimeMs == null) {
+            clearLoginCache(openId, userId);
+            return null;
+        }
         long accessRemainingMs = accessExpireTimeMs - currentTimeMs;
 
         boolean refreshNeedsRenew = refreshRemainingMs < ServerRedisKeys.TOKEN_REFRESH_THRESHOLD_MS;
         boolean accessExpired = accessRemainingMs <= 0;
 
-        // AccessToken 过期或 RefreshToken 接近过期时，主动换发以减少客户端失败重试。
         if (refreshNeedsRenew || accessExpired) {
             if (accessExpired) {
                 log.info("用户 {} 的AccessToken已过期，重新生成双Token", userId);
@@ -257,20 +263,19 @@ public class TokenServiceImpl implements TokenService {
                 log.info("用户 {} 的RefreshToken即将过期（剩余 {} ms），自动续期", userId, refreshRemainingMs);
             }
             updateLastLoginTime(userId);
-            return generateTokens(userId, String.valueOf(openIdFromCache));
+            return generateTokens(userId, openId);
         }
 
-        var accessTokenObj = tokenDataRaw.get("accessToken");
-        if (accessTokenObj == null || StrUtil.isBlank(String.valueOf(accessTokenObj))) {
+        var accessToken = stringValue(tokenDataRaw.get("accessToken"));
+        if (StrUtil.isBlank(accessToken)) {
             log.warn("用户 {} 缓存 accessToken 为空，重新生成双Token", userId);
             updateLastLoginTime(userId);
-            return generateTokens(userId, String.valueOf(openIdFromCache));
+            return generateTokens(userId, openId);
         }
-        var accessToken = String.valueOf(accessTokenObj);
-        if (!JwtTokenUtil.isValidAndNotExpired(accessToken)) {
+        if (!JwtTokenUtil.isValidAndNotExpired(accessToken) || !userId.equals(JwtTokenUtil.getUserId(accessToken))) {
             log.warn("用户 {} 缓存 accessToken 在当前服务下无效，重新生成双Token", userId);
             updateLastLoginTime(userId);
-            return generateTokens(userId, String.valueOf(openIdFromCache));
+            return generateTokens(userId, openId);
         }
 
         long accessExpiresIn = TimeUnit.HOURS.toSeconds(AuthConstant.ACCESS_TOKEN_EXPIRE_HOURS);
@@ -281,7 +286,7 @@ public class TokenServiceImpl implements TokenService {
 
         return TokenVO.builder()
                 .accessToken(accessToken)
-                .refreshToken((String) tokenDataRaw.get("refreshToken"))
+                .refreshToken(stringValue(tokenDataRaw.get("refreshToken")))
                 .accessExpiresIn(accessExpiresIn)
                 .refreshExpiresIn(refreshExpiresIn)
                 .build();
@@ -302,32 +307,41 @@ public class TokenServiceImpl implements TokenService {
         var key = ServerRedisKeys.wxUserInfo(openId);
 
         var userInfo = new HashMap<String, Object>();
+        userInfo.put("schemaVersion", CACHE_SCHEMA_VERSION);
+        userInfo.put("cacheType", USER_INFO_CACHE_TYPE);
         userInfo.put("userId", userId);
         userInfo.put("openId", openId);
         if (StrUtil.isNotBlank(unionId)) {
             userInfo.put("unionId", unionId);
         }
 
-        // 使用 Hash 便于后续追加 unionId 等字段。
-        redisUtil.hSetAll(key, userInfo);
+        var saved = redisUtil.hSetAll(key, userInfo, fullRefreshCacheTtlSeconds());
+        if (!saved || !isExpectedUserInfoCache(redisUtil.hGetAll(key), openId, userId)) {
+            redisUtil.delete(key);
+            throw cacheWriteException("微信用户登录缓存写入失败", userId, openId, key);
+        }
     }
 
     /**
      * 从 openId 登录缓存中读取用户 ID。
      *
-     * @param openId 微信小程序 openId
+     * @param openId 微信 openId
      * @return 已缓存的用户 ID；未登录或缓存缺失时返回 null
      */
     @Override
     public Long getCachedUserId(String openId) {
         var key = ServerRedisKeys.wxUserInfo(openId);
-        var userIdObj = redisUtil.hGet(key, "userId");
+        var userInfoRaw = redisUtil.hGetAll(key);
+        var userId = parseLongOrNull(userInfoRaw.get("userId"));
 
-        if (userIdObj == null) {
+        if (!isExpectedUserInfoCache(userInfoRaw, openId, userId)) {
+            if (CollUtil.isNotEmpty(userInfoRaw)) {
+                redisUtil.delete(key);
+            }
             return null;
         }
 
-        return Long.valueOf(String.valueOf(userIdObj));
+        return userId;
     }
 
     // ==================== 私有方法 ====================
@@ -376,24 +390,7 @@ public class TokenServiceImpl implements TokenService {
      * </p>
      */
     private void cacheToken(Long userId, TokenVO tokenVO, String openId) {
-        var tokenKey = ServerRedisKeys.wxUserToken(userId);
-
-        // 绝对过期时间可避免 Redis TTL 与 Hash 数据不一致时误判。
-        long currentTimeMs = System.currentTimeMillis();
-        long accessExpireTimeMs = currentTimeMs + AuthConstant.ACCESS_TOKEN_EXPIRE_MS;
-        long refreshExpireTimeMs = currentTimeMs + AuthConstant.REFRESH_TOKEN_EXPIRE_MS;
-
-        var tokenData = new HashMap<String, Object>();
-        tokenData.put("accessToken", tokenVO.getAccessToken());
-        tokenData.put("refreshToken", tokenVO.getRefreshToken());
-        tokenData.put("accessExpireTimeMs", accessExpireTimeMs);
-        tokenData.put("refreshExpireTimeMs", refreshExpireTimeMs);
-        tokenData.put("openId", openId);
-
-        redisUtil.hSetAll(tokenKey, tokenData);
-
-        var indexKey = ServerRedisKeys.wxRefreshToken(tokenVO.getRefreshToken());
-        redisUtil.set(indexKey, String.valueOf(userId));
+        cacheTokenWithTtl(userId, tokenVO, openId, TimeUnit.DAYS.toSeconds(AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS));
     }
 
     /**
@@ -428,22 +425,29 @@ public class TokenServiceImpl implements TokenService {
      */
     private void cacheTokenWithTtl(Long userId, TokenVO tokenVO, String openId, long refreshRemainingSeconds) {
         var tokenKey = ServerRedisKeys.wxUserToken(userId);
+        var indexKey = ServerRedisKeys.wxRefreshToken(tokenVO.getRefreshToken());
 
         long currentTimeMs = System.currentTimeMillis();
         long accessExpireTimeMs = currentTimeMs + AuthConstant.ACCESS_TOKEN_EXPIRE_MS;
         long refreshExpireTimeMs = currentTimeMs + refreshRemainingSeconds * 1000;
+        long cacheTtlSeconds = refreshRemainingSeconds + CACHE_TTL_BUFFER_SECONDS;
 
         var tokenData = new HashMap<String, Object>();
+        tokenData.put("schemaVersion", CACHE_SCHEMA_VERSION);
+        tokenData.put("cacheType", TOKEN_CACHE_TYPE);
+        tokenData.put("userId", userId);
+        tokenData.put("openId", openId);
         tokenData.put("accessToken", tokenVO.getAccessToken());
         tokenData.put("refreshToken", tokenVO.getRefreshToken());
         tokenData.put("accessExpireTimeMs", accessExpireTimeMs);
         tokenData.put("refreshExpireTimeMs", refreshExpireTimeMs);
-        tokenData.put("openId", openId);
 
-        redisUtil.hSetAll(tokenKey, tokenData);
-
-        var indexKey = ServerRedisKeys.wxRefreshToken(tokenVO.getRefreshToken());
-        redisUtil.set(indexKey, String.valueOf(userId));
+        var tokenSaved = redisUtil.hSetAll(tokenKey, tokenData, cacheTtlSeconds);
+        var indexSaved = redisUtil.set(indexKey, String.valueOf(userId), cacheTtlSeconds);
+        if (!tokenSaved || !indexSaved || !isTokenCacheWritten(userId, openId, tokenVO, tokenKey, indexKey)) {
+            redisUtil.delete(tokenKey, indexKey);
+            throw cacheWriteException("Token缓存写入失败", userId, openId, tokenKey);
+        }
     }
 
     /**
@@ -482,5 +486,71 @@ public class TokenServiceImpl implements TokenService {
             return "";
         }
         return StrUtil.removeAll(token.trim(), "\"");
+    }
+
+    private boolean isTokenCacheWritten(Long userId, String openId, TokenVO tokenVO, String tokenKey, String indexKey) {
+        var tokenDataRaw = redisUtil.hGetAll(tokenKey);
+        var indexedUserId = redisUtil.get(indexKey, String.class);
+        return isExpectedTokenCache(tokenDataRaw, userId)
+                && openId.equals(stringValue(tokenDataRaw.get("openId")))
+                && tokenVO.getAccessToken().equals(stringValue(tokenDataRaw.get("accessToken")))
+                && tokenVO.getRefreshToken().equals(stringValue(tokenDataRaw.get("refreshToken")))
+                && String.valueOf(userId).equals(indexedUserId)
+                && redisUtil.getExpire(tokenKey) > 0
+                && redisUtil.getExpire(indexKey) > 0;
+    }
+
+    private boolean isExpectedTokenCache(Map<Object, Object> tokenDataRaw, Long userId) {
+        if (CollUtil.isEmpty(tokenDataRaw) || userId == null) {
+            return false;
+        }
+        return TOKEN_CACHE_TYPE.equals(stringValue(tokenDataRaw.get("cacheType")))
+                && Integer.valueOf(CACHE_SCHEMA_VERSION).equals(parseIntegerOrNull(tokenDataRaw.get("schemaVersion")))
+                && userId.equals(parseLongOrNull(tokenDataRaw.get("userId")));
+    }
+
+    private boolean isExpectedUserInfoCache(Map<Object, Object> userInfoRaw, String openId, Long userId) {
+        if (CollUtil.isEmpty(userInfoRaw) || StrUtil.isBlank(openId) || userId == null) {
+            return false;
+        }
+        return USER_INFO_CACHE_TYPE.equals(stringValue(userInfoRaw.get("cacheType")))
+                && Integer.valueOf(CACHE_SCHEMA_VERSION).equals(parseIntegerOrNull(userInfoRaw.get("schemaVersion")))
+                && openId.equals(stringValue(userInfoRaw.get("openId")))
+                && userId.equals(parseLongOrNull(userInfoRaw.get("userId")));
+    }
+
+    private long fullRefreshCacheTtlSeconds() {
+        return TimeUnit.DAYS.toSeconds(AuthConstant.REFRESH_TOKEN_EXPIRE_DAYS) + CACHE_TTL_BUFFER_SECONDS;
+    }
+
+    private BaseException cacheWriteException(String message, Long userId, String openId, String key) {
+        log.error("{}，userId={}, openId={}, key={}", message, userId, MaskUtil.maskOpenId(openId), key);
+        return new BaseException(ResultCodeEnum.SERVICE_ERROR.getCode(), "登录态缓存写入失败，请稍后重试");
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private Long parseLongOrNull(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Integer parseIntegerOrNull(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

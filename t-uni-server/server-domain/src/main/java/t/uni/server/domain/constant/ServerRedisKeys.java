@@ -1,9 +1,9 @@
 package t.uni.server.domain.constant;
 
 /**
- * Server 端 Redis Key 与缓存阈值常量。
+ * Server 端 Redis 逻辑 Key 与缓存阈值常量。
  * <p>
- * 统一维护认证链路使用的 Redis Key 模板，避免各业务模块拼接出不兼容的缓存键。
+ * 统一维护认证链路使用的 Redis 逻辑 Key 模板，物理 namespace 由 common Redis 配置统一处理。
  * </p>
  */
 public final class ServerRedisKeys {

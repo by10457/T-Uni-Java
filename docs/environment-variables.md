@@ -12,6 +12,7 @@
 | `T_UNI_REDIS_HOST` | 服务端 Redis Host | `localhost` |
 | `T_UNI_REDIS_PORT` | 服务端 Redis Port | `6379` |
 | `T_UNI_REDIS_DATABASE` | 服务端 Redis DB | `0` |
+| `T_UNI_REDIS_NAMESPACE` | 服务端 Redis 顶层 key 命名空间；多个模板项目共用 Redis 0 时必须唯一 | `project-a` |
 | `T_UNI_REDIS_PASSWORD` | 服务端 Redis 密码 | 空字符串可留空 |
 | `T_UNI_JWT_SECRET` | 服务端 JWT 密钥，至少 32 字节 | `replace_with_a_long_secret` |
 | `WX_MINIAPP_APPID` | 微信小程序 AppID | `wx123...` |
@@ -99,6 +100,7 @@
 | `T_UNI_ADMIN_REDIS_HOST` | 管理端 Redis Host | `localhost` |
 | `T_UNI_ADMIN_REDIS_PORT` | 管理端 Redis Port | `6379` |
 | `T_UNI_ADMIN_REDIS_DATABASE` | 管理端 Redis DB | `0` |
+| `T_UNI_ADMIN_REDIS_NAMESPACE` | 管理端 Redis 顶层 key 命名空间；未配置时复用 `T_UNI_REDIS_NAMESPACE` 或应用默认值 | `project-a` |
 | `T_UNI_ADMIN_REDIS_PASSWORD` | 管理端 Redis 密码 | 空字符串可留空 |
 | `T_UNI_ADMIN_JWT_SECRET` | 管理端 JWT 密钥，至少 32 字节 | `replace_with_a_long_secret` |
 
@@ -122,7 +124,8 @@
 ## 推荐做法
 
 - 本地开发：先只配服务端最小变量
-- 需要后台时：再补管理端变量
+- 多个模板派生项目共用 Redis 0：必须显式设置不同的 `T_UNI_REDIS_NAMESPACE`
+- 需要后台时：再补管理端变量；如果后台和服务端属于同一项目，可以复用同一个 namespace
 - 需要对象存储时：最后再补七牛或 MinIO
 
 不要在开源模板里提交真实密钥、真实公网域名、真实回调地址。

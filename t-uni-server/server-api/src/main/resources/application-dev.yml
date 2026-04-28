@@ -27,6 +27,7 @@ t.uni:
     port: ${T_UNI_REDIS_PORT:6379}
     database: ${T_UNI_REDIS_DATABASE:0}
     password: ${T_UNI_REDIS_PASSWORD:}
+    namespace: ${T_UNI_REDIS_NAMESPACE:${spring.application.name}:${t.uni.master.database}}
 
   jwt:
     secret: ${T_UNI_JWT_SECRET:replace_with_a_64_byte_secret_in_real_env}

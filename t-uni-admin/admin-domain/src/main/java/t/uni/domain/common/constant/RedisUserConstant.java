@@ -3,7 +3,10 @@ package t.uni.domain.common.constant;
 import lombok.Data;
 
 /**
- * Redis用户前缀设置
+ * Redis 用户逻辑 Key 常量。
+ * <p>
+ * 本类只生成 Redis 逻辑 key，物理 namespace 由 common Redis 配置统一处理。
+ * </p>
  */
 @Data
 public class RedisUserConstant {

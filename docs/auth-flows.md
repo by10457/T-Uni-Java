@@ -45,6 +45,14 @@
 3. 服务端校验 Redis 当前态和 refresh 过期时间
 4. 重新生成 token 对
 
+## Redis 登录态与命名空间
+
+认证缓存使用 Redis 逻辑 key：`wx:user:{openId}`、`wx:token:{userId}`、`wx:refresh:{refreshToken}`。实际写入 Redis 时会由 common Redis 配置统一加上 `t.uni.redis.namespace`，例如 `project-a::wx:token:1`。
+
+多个模板派生项目可以共用 Redis database 0，但必须配置不同的 `T_UNI_REDIS_NAMESPACE`。启用 namespace 后，旧的未加 namespace 登录态不会再命中，用户需要重新登录；模板不会自动扫描或迁移旧 key，避免误删其他业务缓存。
+
+登录写缓存时会同时写入 TTL、自描述字段和一致性字段。`wx:token:{userId}` 包含 `schemaVersion`、`cacheType`、`userId`、`openId`、`accessToken`、`refreshToken`、`accessExpireTimeMs`、`refreshExpireTimeMs`；写入失败或写后校验失败会直接返回服务错误，不再返回后续必然鉴权失败的 token。
+
 ## 模板级约束
 
 ### 1. 保留双表边界

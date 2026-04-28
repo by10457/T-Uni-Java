@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Service;
+import t.uni.common.config.redis.RedisKeyNamespace;
 import t.uni.domain.common.constant.RedisUserConstant;
 
 import java.util.ArrayList;
@@ -16,6 +17,8 @@ public class RedisService {
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private RedisKeyNamespace redisKeyNamespace;
 
     /**
      * 分页扫描Redis中匹配特定前缀的key
@@ -26,7 +29,7 @@ public class RedisService {
      */
     @NotNull
     public List<String> scannerRedisKeyByPage(long pageNum, long pageSize) {
-        String prefix = RedisUserConstant.getUserLoginInfoPrefix("*");
+        String prefix = redisKeyNamespace.applyPattern(RedisUserConstant.getUserLoginInfoPrefix("*"));
 
         List<String> keys = new ArrayList<>();
         ScanOptions scanOptions = ScanOptions.scanOptions()
@@ -38,7 +41,7 @@ public class RedisService {
             int skip = Math.toIntExact((pageNum - 1) * pageSize);
             int count = 0;
             while (cursor.hasNext()) {
-                String key = cursor.next();
+                String key = redisKeyNamespace.strip(cursor.next());
                 if (count >= skip && keys.size() < pageSize) {
                     keys.add(key);
                 }
