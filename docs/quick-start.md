@@ -4,6 +4,8 @@
 
 如果你只想先把小程序服务端跑起来，优先看“服务端最小路径”。
 
+如果你准备长期基于模板创建新项目，建议先运行 `scripts/rename-project/` 下的改名脚本，完成项目名、包名、模块名和环境变量前缀改名后，再初始化数据库、Docker volume、OpenIM userID、MinIO bucket 等外部资源。脚本只会处理 `.env.example`，不会修改真实 `.env`。
+
 ## 1. 先决条件
 
 - `JDK 21`

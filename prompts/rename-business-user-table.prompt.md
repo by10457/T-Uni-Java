@@ -2,6 +2,8 @@
 
 把下面这份 Prompt 直接交给 AI 使用，用来把模板默认的 `biz_user` 改成你自己的业务用户表名字。
 
+项目改名和业务用户表改名是两个任务：如果你同时要改项目名 / 包名和 `biz_user`，先运行 `scripts/rename-project/` 下的项目改名脚本并验证通过，再执行本 Prompt。
+
 ## 使用前先确认
 
 ```text
@@ -23,6 +25,7 @@ extra_business_fields:
 
 - 当前仓库已有 `IBusinessUser` / `IBusinessUserMapper` / `WxAuthConfig` 抽象间接层，优先利用而不是重建
 - `WxAuthServiceImpl` 中有 `new BizUser()` 硬编码，改表时**必须一并替换成新实体类**
+- 不要把项目改名脚本和业务用户表替换混成一次盲替换
 
 ## Prompt
 
@@ -31,6 +34,8 @@ extra_business_fields:
 
 目标：
 把默认的 `biz_user` 实现替换成新的业务用户表实现。
+
+如果本仓库还没有完成项目名 / 包名改名，请先停下来确认是否需要运行项目改名脚本；不要把项目改名和业务用户表改名混成一个任务。
 
 输入：
 - business_user_entity:

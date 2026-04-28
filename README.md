@@ -135,7 +135,12 @@ docker compose --profile server up -d --build
 
 ### 1. 改项目名
 
-不要只做字符串替换。优先使用 [项目改名 Prompt](prompts/project-rename-java-template.prompt.md)，按映射一次性处理：
+不要只做字符串替换。长期作为新项目使用时，优先使用 `scripts/rename-project/` 下的跨平台脚本，再配合 [项目改名 Prompt](prompts/project-rename-java-template.prompt.md) 做 dry-run、确认、执行和验证。
+
+- macOS / Linux / Git Bash：`scripts/rename-project/rename-project.sh`
+- Windows PowerShell：`scripts/rename-project/rename-project.ps1`
+
+脚本会按映射一次性处理：
 
 - Maven 坐标
 - 模块目录名
@@ -143,7 +148,9 @@ docker compose --profile server up -d --build
 - Mapper XML 全限定类名
 - Spring 扫描路径
 - 环境变量前缀
-- 文档与展示文案
+- Docker / `.env.example` / 文档与展示文案
+
+真实 `.env`、已有 Docker volume、OpenIM userID、MinIO bucket 不会自动迁移，需要人工确认。
 
 ### 2. 改业务用户表
 

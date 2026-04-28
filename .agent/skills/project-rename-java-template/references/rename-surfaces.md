@@ -1,17 +1,33 @@
 # 改名影响面
 
-正式修改前，至少检查下面这些位置：
+正式修改前，先运行 `scripts/rename-project/` 下的改名脚本 dry-run。下面清单用于理解脚本覆盖范围和后续人工复核范围。
 
-- 根和子模块 `pom.xml`
-- 模块目录名
-- Java `package` 和 `import`
-- 启动类文件名和类名
-- `@MapperScan`、`@ComponentScan`、基于字符串的包名判断
+## 脚本覆盖的机械改名面
+
+- 根和子模块 `pom.xml` 中的 Maven groupId、artifactId、module 引用
+- 模块目录名：`t-uni-common`、`t-uni-server`，以及 `rename_admin=true` 时的 `t-uni-admin`
+- Java 包名与包路径：`t.uni` / `t/uni`
+- `@MapperScan`、`@ComponentScan`、字符串形式包名
 - MyBatis XML 的 `namespace`、`type`、`resultType`
-- `application*.yml` 中的前缀和环境变量
+- `application*.yml` 中的配置前缀和环境变量前缀
 - `spring.application.name`
-- SQL schema 名称和全限定类名
-- README、docs、prompts、skills、HTML、JSON
+- SQL schema 名称和文本中的全限定类名
+- Dockerfile、compose、部署脚本、日志目录、数据目录、镜像名、容器名
+- `.env.example`
+- OpenIM 默认 `tuni_` / `tuni_system` 文案和配置默认值
+- MinIO / admin 默认资源名
+- README、docs、prompts、skills、HTML、JSON 等展示文案
+
+## 脚本不自动处理的人工确认面
+
+- 真实 `.env`、`.env.*`，只提醒用户手动同步
+- 已存在的 Docker volume 和线上数据迁移
+- OpenIM userID、MinIO bucket、线上回调域名等外部资源迁移
+- LICENSE holder 是否能改
+- `/api` 路径前缀是否需要改
+- `wx.auth` 的业务语义是否需要改
+- `rename_admin=false` 时 admin 模块里的旧命名是否故意保留
+- 编译后暴露出的类名、mainClass、扫描路径或 SQL 语义问题
 
 ## 具体 before/after 示例
 
@@ -47,18 +63,6 @@ import com.wxy.common.core.exception.BaseException;
 
 // after
 @MapperScan("com.wxy.server")
-```
-
-### 启动类
-
-```java
-// before — 文件名: TUniServerApplication.java
-@SpringBootApplication
-public class TUniServerApplication { ... }
-
-// after — 文件名: WxyServerApplication.java
-@SpringBootApplication
-public class WxyServerApplication { ... }
 ```
 
 ### MyBatis XML namespace

@@ -37,3 +37,8 @@ __pycache__/
 .env.*
 !.env.example
 data/
+
+# 本地项目改名配置与报告
+scripts/rename-project/rename.local.env
+scripts/rename-project/*.local.env
+scripts/rename-project/rename-report*.txt
