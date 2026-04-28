@@ -38,9 +38,45 @@ docker run -d --name tuni-redis -p 6379:6379 \
   redis:7-alpine
 ```
 
+### Docker 部署服务端（可选）
+
+如果你想直接用 Docker 跑服务端应用，可以复制环境变量样例后修改真实配置：
+
+```bash
+cp .env.example .env
+```
+
+单独使用部署脚本时，应用容器访问宿主机或 compose 暴露出来的 MySQL / Redis，`.env` 中可以使用：
+
+```bash
+T_UNI_DB_HOST=host.docker.internal
+T_UNI_REDIS_HOST=host.docker.internal
+```
+
+构建并部署服务端：
+
+```bash
+./t-uni-server/build.sh
+./t-uni-server/docker-deploy.sh
+```
+
+也可以使用 compose profile 启动服务端容器。此时容器之间通过服务名互访，compose 会覆盖为 `mysql` / `redis`：
+
+```bash
+./t-uni-server/build.sh
+docker compose --profile server up -d --build
+```
+
+验证：
+
+```bash
+curl http://localhost:10457/api/health
+```
+
 ### 关于 MySQL 版本
 
 `init.sql` 使用了 `utf8mb4_0900_ai_ci` 排序规则，这**要求 MySQL 8.0+**。如果使用 MySQL 5.7 或 MariaDB，需要手动替换为 `utf8mb4_general_ci`。
+
 
 ### 关于微信测试号
 
@@ -262,7 +298,23 @@ export T_UNI_ADMIN_MINIO_SECRET_KEY=minioadmin
 export T_UNI_ADMIN_MINIO_BUCKET=tuni-admin
 ```
 
-### Step 3. 启动管理端
+### Step 3. Docker 部署管理端（可选）
+
+如果使用 Docker 部署管理端，先确保已经导入管理端 SQL，并在 `.env` 中补齐 `T_UNI_ADMIN_*` 变量。
+
+```bash
+./t-uni-admin/build.sh
+./t-uni-admin/docker-deploy.sh
+```
+
+也可以使用 compose profile：
+
+```bash
+./t-uni-admin/build.sh
+docker compose --profile admin up -d --build
+```
+
+### Step 4. 启动管理端
 
 ```bash
 mvn -pl t-uni-admin/admin-api -am spring-boot:run
@@ -272,7 +324,7 @@ mvn -pl t-uni-admin/admin-api -am spring-boot:run
 
 - `7840`
 
-### Step 4. 验证管理端
+### Step 5. 验证管理端
 
 默认账号：
 
@@ -340,7 +392,26 @@ POST /api/user/login
 
 它不影响登录，但会影响用户体验。建议你在正式使用前先补头像池数据。
 
-## 5. 下一步
+### MySQL 初始化脚本未重新执行
+
+`docker-compose.yml` 挂载的 `init_sql/init.sql` 只会在 `tuni-mysql-data` volume 首次创建时执行。已有 volume 时，修改 SQL 不会自动重跑。
+
+### Docker 容器访问依赖失败
+
+处理：
+
+- 使用 `docker-deploy.sh` 单独启动应用容器时，访问宿主机 MySQL / Redis 可用 `host.docker.internal`
+- 使用 `docker compose --profile server` 或 `--profile admin` 时，容器内访问依赖应使用服务名 `mysql` / `redis`
+
+### Redis 0 被多个项目共用
+
+处理：
+
+- 保持 `T_UNI_REDIS_DATABASE=0`
+- 为不同项目设置不同 `T_UNI_REDIS_NAMESPACE`
+- 管理端可以通过 `T_UNI_ADMIN_REDIS_NAMESPACE` 单独覆盖，未配置时复用 `T_UNI_REDIS_NAMESPACE`
+
+## 6. 下一步
 
 - 看 [environment-variables.md](environment-variables.md)
 - 看 [wechat-miniapp.md](wechat-miniapp.md)

@@ -1,0 +1,47 @@
+server:
+  port: ${SERVER_PORT:7840}
+
+knife4j:
+  enable: false
+  setting:
+    language: zh_cn
+
+logging:
+  level:
+    t.uni.service.mapper: ${T_UNI_ADMIN_LOG_LEVEL:info}
+    t.uni.service.controller: ${T_UNI_ADMIN_LOG_LEVEL:info}
+    t.uni.service.service: ${T_UNI_ADMIN_LOG_LEVEL:info}
+    root: ${ROOT_LOG_LEVEL:warn}
+  pattern:
+    dateformat: HH:mm:ss:SSS
+
+t.uni:
+  master:
+    host: ${T_UNI_ADMIN_DB_HOST:localhost}
+    port: ${T_UNI_ADMIN_DB_PORT:3306}
+    database: ${T_UNI_ADMIN_DB_NAME:tuni_admin}
+    username: ${T_UNI_ADMIN_DB_USERNAME:root}
+    password: ${T_UNI_ADMIN_DB_PASSWORD:}
+
+  redis:
+    host: ${T_UNI_ADMIN_REDIS_HOST:localhost}
+    port: ${T_UNI_ADMIN_REDIS_PORT:6379}
+    database: ${T_UNI_ADMIN_REDIS_DATABASE:0}
+    password: ${T_UNI_ADMIN_REDIS_PASSWORD:}
+    namespace: ${T_UNI_ADMIN_REDIS_NAMESPACE:${T_UNI_REDIS_NAMESPACE:${spring.application.name}:${t.uni.master.database}}}
+
+  jwt:
+    secret: ${T_UNI_ADMIN_JWT_SECRET:}
+
+dromara:
+  local-plus:
+    domain: /api/local-file
+    path-patterns: /api/local-file/**
+    storage-path: ${T_UNI_ADMIN_LOCAL_STORAGE_PATH:/app/data/t-uni-admin/}
+    base-path: ""
+  minio:
+    endpointUrl: ${T_UNI_ADMIN_MINIO_ENDPOINT:http://localhost:9000}
+    accessKey: ${T_UNI_ADMIN_MINIO_ACCESS_KEY:}
+    secretKey: ${T_UNI_ADMIN_MINIO_SECRET_KEY:}
+    bucket-name: ${T_UNI_ADMIN_MINIO_BUCKET:tuni-admin}
+    base-path: ""

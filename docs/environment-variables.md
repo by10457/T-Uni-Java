@@ -121,11 +121,43 @@
 | `T_UNI_ADMIN_MINIO_SECRET_KEY` | MinIO Secret Key |
 | `T_UNI_ADMIN_MINIO_BUCKET` | MinIO Bucket 名 |
 
+## Docker 相关变量
+
+### Compose 依赖服务
+
+| 变量名 | 说明 | 默认值 |
+| --- | --- | --- |
+| `T_UNI_DOCKER_MYSQL_ROOT_PASSWORD` | `docker-compose.yml` 中 MySQL root 密码 | `123456` |
+| `T_UNI_DOCKER_MYSQL_PORT` | MySQL 映射到宿主机的端口 | `3306` |
+| `T_UNI_DOCKER_REDIS_PORT` | Redis 映射到宿主机的端口 | `6379` |
+
+### 构建与部署脚本
+
+| 变量名 | 说明 | 默认值 |
+| --- | --- | --- |
+| `BUILD_PROFILE` | `build.sh` 使用的 Maven profile | `prod` |
+| `MAVEN_IMAGE` | `build.sh` 使用的 Maven Docker 镜像 | `maven:3.9.6-eclipse-temurin-21` |
+| `MAVEN_CACHE_DIR` | Dockerized Maven 使用的本地仓库缓存目录 | `$HOME/.m2`，存在 `/data` 时为 `/data/maven/.m2` |
+| `ENV_FILE` | `docker-deploy.sh` 传给容器的环境变量文件 | 仓库根目录 `.env` |
+| `PORT` | `docker-deploy.sh` 使用的应用端口 | 服务端 `10457`，管理端 `7840` |
+| `HOST_LOG_DIR` | 宿主机日志挂载目录 | `./logs/t-uni-server` 或 `./logs/t-uni-admin` |
+| `HOST_DATA_DIR` | 管理端本地文件存储挂载目录 | `./data/t-uni-admin` |
+| `CONTAINER_LOG_MAX_SIZE` | Docker 容器日志单文件大小上限 | `100m` |
+| `CONTAINER_LOG_MAX_FILE` | Docker 容器日志保留文件数 | `3` |
+| `T_UNI_ADMIN_SERVER_PORT` | compose profile 中管理端映射到宿主机的端口 | `7840` |
+
+说明：
+
+- 使用 `docker-deploy.sh` 单独启动应用容器时，应用访问宿主机或 compose 暴露出来的 MySQL / Redis，可在 `.env` 中使用 `host.docker.internal`。
+- 使用 `docker compose --profile server` 或 `--profile admin` 时，compose 会覆盖容器内数据库和 Redis Host 为 `mysql` / `redis`。
+- 仓库只提交 `.env.example`，不要提交 `.env`。
+
 ## 推荐做法
 
 - 本地开发：先只配服务端最小变量
 - 多个模板派生项目共用 Redis 0：必须显式设置不同的 `T_UNI_REDIS_NAMESPACE`
 - 需要后台时：再补管理端变量；如果后台和服务端属于同一项目，可以复用同一个 namespace
+- 需要 Docker 部署时：复制 `.env.example` 为 `.env`，只在 `.env` 中填写真实密钥
 - 需要对象存储时：最后再补七牛或 MinIO
 
 不要在开源模板里提交真实密钥、真实公网域名、真实回调地址。

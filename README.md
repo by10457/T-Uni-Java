@@ -74,10 +74,33 @@
 - `admin-api` 的启动类是 `TUniAdminApplication`
 - 推荐先在 IDEA 中分别建立两个 Spring Boot Run Configuration
 
-如果你想快速起本地依赖，可以使用仓库根目录的 `docker-compose.yml` 启动 `MySQL 8` 和 `Redis`：
+如果你想快速起本地依赖，可以使用仓库根目录的 `docker-compose.yml` 启动 `MySQL 8` 和 `Redis`。默认不会启动应用容器：
 
 ```bash
 docker compose up -d
+```
+
+如果要用 Docker 部署服务端应用：
+
+```bash
+cp .env.example .env
+# 修改 .env 中的数据库、Redis、JWT、微信小程序变量
+./t-uni-server/build.sh
+./t-uni-server/docker-deploy.sh
+```
+
+也可以使用 compose profile 启动服务端容器：
+
+```bash
+./t-uni-server/build.sh
+docker compose --profile server up -d --build
+```
+
+管理端 Docker 部署是可选能力，使用前请先导入管理端 SQL 并补齐 `T_UNI_ADMIN_*` 变量：
+
+```bash
+./t-uni-admin/build.sh
+./t-uni-admin/docker-deploy.sh
 ```
 
 ## 文档导航
