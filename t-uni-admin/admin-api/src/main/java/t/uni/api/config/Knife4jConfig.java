@@ -123,9 +123,8 @@ public class Knife4jConfig {
     @Bean
     public GroupedOpenApi config() {
         return GroupedOpenApi.builder().group("配置")
-                .pathsToMatch("/api/config/**", "/api/emailTemplate/**", "/api/emailUsers/**",
-                        "/api/message/**", "/api/messageReceived/**", "/api/messageType/**",
-                        "/api/menuIcon/**", "/api/schedulers/**", "/api/schedulersGroup/**"
+                .pathsToMatch("/api/message/**", "/api/messageReceived/**", "/api/messageType/**",
+                        "/api/schedulers/**", "/api/schedulersGroup/**"
                 )
                 .build();
     }

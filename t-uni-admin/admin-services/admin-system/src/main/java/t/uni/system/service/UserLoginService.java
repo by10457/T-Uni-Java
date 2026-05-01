@@ -44,13 +44,6 @@ public interface UserLoginService extends IService<AdminUser> {
     Map<String, Object> adminPortalUserInfo();
 
     /**
-     * 登录发送邮件验证码
-     *
-     * @param email 邮箱
-     */
-    void sendLoginEmail(@NotNull String email);
-
-    /**
      * 刷新用户token
      *
      * @param dto 请求token

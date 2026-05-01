@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(name = "MenuIconVo对象", title = "系统菜单图标", description = "系统菜单图标")
+@Schema(name = "ScannerControllerInfoVo对象", title = "接口扫描信息", description = "接口扫描信息")
 public class ScannerControllerInfoVo {
 
     @Schema(name = "httpMethod", title = "标签")

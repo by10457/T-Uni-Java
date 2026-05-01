@@ -23,9 +23,6 @@ public class LoginDto {
             message = "密码格式应为8-18位数字、字母、符号的任意两种组合")
     private String password;
 
-    @Schema(name = "emailCode", title = "邮箱验证码")
-    private String emailCode;
-
     @Schema(name = "type", title = "登录类型")
     @NotBlank(message = "登录类型不能为空")
     private String type = "default";

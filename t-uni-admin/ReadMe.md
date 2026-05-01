@@ -123,7 +123,6 @@ t-uni-admin/
 ├── admin-domain            # Entity、DTO、VO、枚举等领域对象
 ├── admin-services
 │   ├── admin-system        # 用户、角色、权限、部门、菜单、消息、文件等系统服务
-│   ├── admin-configuration # 系统配置、菜单图标等配置服务
 │   └── admin-schedule      # 定时任务服务
 ├── build.sh                # Docker Maven 打包脚本
 ├── Dockerfile              # 管理端镜像构建文件

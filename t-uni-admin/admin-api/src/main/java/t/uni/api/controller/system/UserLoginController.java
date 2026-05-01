@@ -4,13 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.Result;
 import t.uni.common.core.result.ResultCodeEnum;
 import t.uni.core.context.BaseContext;
-import t.uni.domain.common.enums.AdminResultCodeEnum;
 import t.uni.domain.common.model.vo.LoginVo;
 import t.uni.domain.system.dto.user.AdminUserUpdateByLocalUserDto;
 import t.uni.domain.system.dto.user.LoginDto;
@@ -62,18 +59,6 @@ public class UserLoginController {
     @GetMapping("/api/auth/codes")
     public Result<List<String>> adminPortalCodes() {
         return Result.success(routerService.adminPortalCodes());
-    }
-
-    @Operation(summary = "普通用户登录发送邮件验证码", description = "登录发送邮件验证码")
-    @PostMapping("/api/user/public/email-code")
-    public Result<String> sendLoginEmail(String email) {
-        if (!StringUtils.hasText(email))
-            throw new BaseException(ResultCodeEnum.REQUEST_IS_EMPTY);
-
-        userLoginService.sendLoginEmail(email);
-        return Result.success(null,
-                AdminResultCodeEnum.EMAIL_CODE_SEND_SUCCESS.getCode(),
-                AdminResultCodeEnum.EMAIL_CODE_SEND_SUCCESS.getMessage());
     }
 
     @Operation(summary = "普通用户登录刷新token", description = "刷新用户token")

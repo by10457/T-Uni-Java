@@ -19,7 +19,6 @@
     <modules>
         <module>admin-system</module>
         <module>admin-schedule</module>
-        <module>admin-configuration</module>
     </modules>
 
     <dependencies>

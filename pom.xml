@@ -89,11 +89,6 @@
             </dependency>
             <dependency>
                 <groupId>t.uni</groupId>
-                <artifactId>admin-configuration</artifactId>
-                <version>${t-uni.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>t.uni</groupId>
                 <artifactId>admin-schedule</artifactId>
                 <version>${t-uni.version}</version>
             </dependency>

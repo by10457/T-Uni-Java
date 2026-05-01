@@ -5,8 +5,6 @@ import lombok.Getter;
 
 @Getter
 public enum LoginEnums {
-    // 邮箱登录请求
-    EMAIL_STRATEGY("email"),
     // 默认登录请求
     default_STRATEGY("default"),
     ;

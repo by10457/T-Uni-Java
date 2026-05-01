@@ -1,6 +1,6 @@
 # 登录模块策略模式实现
 
-通过 `LoginStrategy` 接口实现多登录方式动态切换，支持邮箱登录、默认账号密码登录、邮箱登录等扩展。
+通过 `LoginStrategy` 接口实现登录方式动态切换，当前保留默认账号密码登录策略。
 
 ## 核心组件
 
@@ -8,7 +8,6 @@
 |------------------------|----------------------|
 | `LoginStrategy`        | 策略接口，定义 `login` 方法规范 |
 | `LoginContext`         | 策略上下文，根据输入动态选择具体策略   |
-| `EmailLoginStrategy`   | 邮箱登录策略（需验证邮箱相关逻辑）    |
 | `DefaultLoginStrategy` | 默认账号密码登录策略（仅作基础用户查询） |
 
 ## 快速开始
@@ -21,8 +20,6 @@
 HashMap<String, LoginStrategy> loginStrategyHashMap = new HashMap<>();
 // 默认的登录方式
 loginStrategyHashMap.put(LoginEnums.default_STRATEGY.getValue(), new DefaultLoginStrategy(userMapper));
-// 注册邮箱
-loginStrategyHashMap.put(LoginEnums.EMAIL_STRATEGY.getValue(), new EmailLoginStrategy(redisTemplate, userMapper));
 ```
 
 ### 2. 执行登录流程
@@ -62,7 +59,7 @@ public LoginVo login(LoginDto loginDto) {
 
 ### 策略实现要求
 
-- 各策略 **只需关注自身特有逻辑**（如邮箱验证码校验）
+- 各策略 **只需关注自身特有逻辑**
 - **禁止** 在策略中处理账号密码验证（由业务层统一处理）
 - 返回的 `AdminUser` 对象应为完整实体
 
@@ -71,11 +68,9 @@ public LoginVo login(LoginDto loginDto) {
 ```mermaid
 graph TD
     A[LoginContext] --> B{策略选择}
-    B -->|email| C[EmailLoginStrategy]
-    B -->|default| D[DefaultLoginStrategy]
-    C --> E[返回用户实体]
-    D --> E
-    E --> F[统一密码验证]
+    B -->|default| C[DefaultLoginStrategy]
+    C --> D[返回用户实体]
+    D --> E[统一密码验证]
 ```
 
 ## 扩展新策略

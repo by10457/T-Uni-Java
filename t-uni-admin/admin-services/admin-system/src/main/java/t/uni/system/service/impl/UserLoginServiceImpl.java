@@ -1,14 +1,11 @@
 package t.uni.system.service.impl;
 
-import cn.hutool.captcha.CaptchaUtil;
-import cn.hutool.captcha.CircleCaptcha;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Value;
 import jakarta.servlet.http.HttpServletRequest;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,25 +21,19 @@ import t.uni.core.context.BaseContext;
 import t.uni.core.utils.IpUtil;
 import t.uni.domain.common.constant.RedisUserConstant;
 import t.uni.domain.common.constant.UserConstant;
-import t.uni.domain.common.enums.EmailTemplateEnums;
 import t.uni.domain.common.enums.LoginEnums;
 import t.uni.domain.common.model.vo.LoginVo;
-import t.uni.domain.configuration.entity.EmailTemplate;
 import t.uni.domain.system.dto.user.AdminUserUpdateByLocalUserDto;
 import t.uni.domain.system.dto.user.LoginDto;
 import t.uni.domain.system.dto.user.RefreshTokenDto;
 import t.uni.domain.system.entity.AdminUser;
 import t.uni.domain.system.entity.UserLoginLog;
 import t.uni.domain.system.vo.user.RefreshTokenVo;
-import t.uni.system.core.cache.EmailCacheService;
 import t.uni.system.core.cache.UserLoginVoBuilderCacheService;
 import t.uni.system.core.event.ClearAllUserCacheEvent;
 import t.uni.system.core.login.DefaultLoginStrategy;
-import t.uni.system.core.login.EmailLoginStrategy;
 import t.uni.system.core.login.LoginContext;
 import t.uni.system.core.login.LoginStrategy;
-import t.uni.system.core.template.email.ConcreteSenderEmailTemplate;
-import t.uni.system.mapper.EmailTemplateMapper;
 import t.uni.system.mapper.UserLoginLogMapper;
 import t.uni.system.mapper.UserMapper;
 import t.uni.system.service.UserLoginService;
@@ -63,19 +54,10 @@ public class UserLoginServiceImpl extends ServiceImpl<UserMapper, AdminUser> imp
     private UserMapper userMapper;
 
     @Resource
-    private EmailTemplateMapper emailTemplateMapper;
-
-    @Resource
     private UserLoginLogMapper userLoginLogMapper;
 
     @Resource
-    private ConcreteSenderEmailTemplate concreteSenderEmailTemplate;
-
-    @Resource
     private UserLoginVoBuilderCacheService userLoginVoBuilderCacheService;
-
-    @Resource
-    private EmailCacheService emailCacheService;
 
     @Resource
     private ApplicationEventPublisher applicationEventPublisher;
@@ -103,8 +85,6 @@ public class UserLoginServiceImpl extends ServiceImpl<UserMapper, AdminUser> imp
         HashMap<String, LoginStrategy> loginStrategyHashMap = new HashMap<>();
         // 默认的登录方式
         loginStrategyHashMap.put(LoginEnums.default_STRATEGY.getValue(), new DefaultLoginStrategy(userMapper));
-        // 注册邮箱
-        loginStrategyHashMap.put(LoginEnums.EMAIL_STRATEGY.getValue(), new EmailLoginStrategy(emailCacheService, userMapper));
 
         // 使用登录上下文调用登录策略
         LoginContext loginContext = new LoginContext(loginStrategyHashMap);
@@ -199,52 +179,6 @@ public class UserLoginServiceImpl extends ServiceImpl<UserMapper, AdminUser> imp
         data.put("desc", loginVo.getPersonDescription());
         data.put("homePath", "/analytics");
         return data;
-    }
-
-    /**
-     * 发送登录邮件验证码
-     *
-     * <p>完整处理流程：</p>
-     * <ol>
-     *   <li><b>查询模板</b>：从数据库获取默认的验证码邮件模板</li>
-     *   <li><b>生成验证码</b>：创建4位数字验证码</li>
-     *   <li><b>模板处理</b>：替换模板中的动态变量（系统名称、验证码等）</li>
-     *   <li><b>发送邮件</b>：通过邮件服务发送处理后的模板</li>
-     *   <li><b>缓存验证码</b>：将验证码存入Redis 有效期 xxx</li>
-     * </ol>
-     *
-     * @param email 接收邮箱地址（不可为空）
-     *              <ul>
-     *                <li>未找到默认邮件模板</li>
-     *                <li>邮件发送失败</li>
-     *                <li>Redis操作异常</li>
-     *              </ul>
-     * @see EmailTemplateEnums#VERIFICATION_CODE 验证码模板类型枚举
-     * @see RedisUserConstant  Redis键和过期时间常量
-     */
-    @Override
-    public void sendLoginEmail(@NotNull String email) {
-        // 查询验证码邮件模板
-        LambdaQueryWrapper<EmailTemplate> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(EmailTemplate::getIsDefault, true);
-        lambdaQueryWrapper.eq(EmailTemplate::getType, EmailTemplateEnums.VERIFICATION_CODE.getType());
-        EmailTemplate emailTemplate = emailTemplateMapper.selectOne(lambdaQueryWrapper);
-
-        // 生成验证码
-        CircleCaptcha captcha = CaptchaUtil.createCircleCaptcha(150, 48, 4, 2);
-        String emailCode = captcha.getCode();
-
-        // 需要替换模板内容
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("#title#", "BunnyAdmin");
-        hashMap.put("#verifyCode#", emailCode);
-        hashMap.put("#expires#", 15);
-        hashMap.put("#sendEmailUser#", emailTemplate.getEmailUser());
-        hashMap.put("#companyName#", "BunnyAdmin");
-
-        // 发送邮件
-        concreteSenderEmailTemplate.sendEmailTemplate(email, emailTemplate, hashMap);
-        emailCacheService.buildEmailCodeCache(email, emailCode);
     }
 
     /**

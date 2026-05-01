@@ -20,11 +20,6 @@
         <!-- 依赖 admin-services 子模块 -->
         <dependency>
             <groupId>t.uni</groupId>
-            <artifactId>admin-configuration</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>t.uni</groupId>
             <artifactId>admin-schedule</artifactId>
             <version>${project.version}</version>
         </dependency>

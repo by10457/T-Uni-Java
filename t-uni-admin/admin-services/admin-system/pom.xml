@@ -16,11 +16,4 @@
     <name>Admin System</name>
     <description>Admin系统管理服务</description>
 
-    <dependencies>
-        <!-- 邮箱 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-    </dependencies>
 </project>
