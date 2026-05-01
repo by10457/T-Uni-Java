@@ -48,6 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -136,6 +137,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AdminUser> implemen
 
         // 根据id查询用户登录前缀
         AdminUser adminUser = getOne(Wrappers.<AdminUser>lambdaQuery().eq(AdminUser::getId, id));
+        if (adminUser == null) {
+            throw new BaseException(ResultCodeEnum.DATA_NOT_EXIST);
+        }
 
         // 将用户登录保存在用户登录日志表中
         UserLoginLog userLoginLog = new UserLoginLog();
@@ -190,20 +194,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AdminUser> implemen
         long pageNum = pageParams.getCurrent();
         long pageSize = pageParams.getSize();
         List<String> keys = redisService.scannerRedisKeyByPage(pageNum, pageSize);
+        long total = redisService.countUserLoginKeys();
 
         List<UserVo> list = keys.stream().map(key -> {
             Object loginVoObject = redisTemplate.opsForValue().get(key);
             LoginVo loginVo = JSON.parseObject(JSON.toJSONString(loginVoObject), LoginVo.class);
+            if (loginVo == null) {
+                return null;
+            }
 
             UserVo userVo = new UserVo();
             BeanUtils.copyProperties(loginVo, userVo);
             userVo.setSummary(loginVo.getPersonDescription());
             return userVo;
-        }).toList();
+        }).filter(Objects::nonNull).toList();
 
         return PageResult.<UserVo>builder()
-                .pageNo(pageNum).pageSize(pageSize)
-                .list(list).total((long) keys.size())
+                .pageNo(pageNum)
+                .pageSize(pageSize)
+                .list(list)
+                .total(total)
                 .build();
     }
 

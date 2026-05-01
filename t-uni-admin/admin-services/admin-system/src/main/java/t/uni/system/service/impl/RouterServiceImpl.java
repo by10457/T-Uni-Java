@@ -83,6 +83,10 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
     private static final Long ROUTE_DASHBOARD = 1955000000000000001L;
     private static final Long ROUTE_ANALYTICS = 1955000000000000002L;
     private static final Long ROUTE_WORKSPACE = 1955000000000000003L;
+    private static final Long ROUTE_MONITOR = 1844644093987880962L;
+    private static final Long ROUTE_MONITOR_SERVER = 1844644779039358978L;
+    private static final Long ROUTE_MONITOR_LOGGED_IN = 1918937765434429441L;
+    private static final Long ROUTE_MONITOR_CACHE_RETIRED = 1848989760243838978L;
 
     private static final Long ROUTE_SYSTEM_USER_CREATE = 1955000000000000201L;
     private static final Long ROUTE_SYSTEM_USER_EDIT = 1955000000000000202L;
@@ -100,6 +104,7 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
     private static final Set<Long> BUILTIN_ROUTE_IDS = Set.of(
             ROUTE_SYSTEM, ROUTE_SYSTEM_MENU, ROUTE_SYSTEM_ROLE, ROUTE_SYSTEM_USER, ROUTE_SYSTEM_DEPT,
             ROUTE_DASHBOARD, ROUTE_ANALYTICS, ROUTE_WORKSPACE,
+            ROUTE_MONITOR, ROUTE_MONITOR_SERVER, ROUTE_MONITOR_LOGGED_IN,
             ROUTE_SYSTEM_USER_CREATE, ROUTE_SYSTEM_USER_EDIT, ROUTE_SYSTEM_USER_DELETE,
             ROUTE_SYSTEM_ROLE_CREATE, ROUTE_SYSTEM_ROLE_EDIT, ROUTE_SYSTEM_ROLE_DELETE,
             ROUTE_SYSTEM_MENU_CREATE, ROUTE_SYSTEM_MENU_EDIT, ROUTE_SYSTEM_MENU_DELETE,
@@ -397,6 +402,13 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
         upsertRouter(ROUTE_SYSTEM_DEPT, ROUTE_SYSTEM, "/system/dept", "SystemDept", "/system/dept/list", null, 0,
                 meta("system.dept.title", "charm:organisation", 4, "System:Dept:List"));
 
+        upsertRouter(ROUTE_MONITOR, 0L, "/monitor", "Monitor", null, "/monitor/server", 0,
+                meta("monitor.title", "carbon:cloud-monitoring", 9998, null));
+        upsertRouter(ROUTE_MONITOR_SERVER, ROUTE_MONITOR, "/monitor/server", "MonitorServer", "/monitor/server/index", null, 0,
+                meta("monitor.server.title", "mingcute:server-fill", 1, "Monitor:Server:List"));
+        upsertRouter(ROUTE_MONITOR_LOGGED_IN, ROUTE_MONITOR, "/monitor/logged-in", "MonitorLoggedIn", "/monitor/logged-in/index", null, 0,
+                meta("monitor.loggedIn.title", "material-symbols:login", 2, "Monitor:LoggedIn:List"));
+
         upsertButton(ROUTE_SYSTEM_USER_CREATE, ROUTE_SYSTEM_USER, "SystemUserCreate", "System:User:Create", "common.create");
         upsertButton(ROUTE_SYSTEM_USER_EDIT, ROUTE_SYSTEM_USER, "SystemUserEdit", "System:User:Edit", "common.edit");
         upsertButton(ROUTE_SYSTEM_USER_DELETE, ROUTE_SYSTEM_USER, "SystemUserDelete", "System:User:Delete", "common.delete");
@@ -410,6 +422,7 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
         upsertButton(ROUTE_SYSTEM_DEPT_EDIT, ROUTE_SYSTEM_DEPT, "SystemDeptEdit", "System:Dept:Edit", "common.edit");
         upsertButton(ROUTE_SYSTEM_DEPT_DELETE, ROUTE_SYSTEM_DEPT, "SystemDeptDelete", "System:Dept:Delete", "common.delete");
 
+        removeRetiredRouter(ROUTE_MONITOR_CACHE_RETIRED);
         ensureAdminUserRole();
         BUILTIN_ROUTE_IDS.forEach(routeId -> ensureRouterRole(routeId, ADMIN_ROLE_ID));
     }
@@ -470,6 +483,14 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
                 || !Objects.equals(existing.getMeta(), router.getMeta())
                 || !Objects.equals(existing.getStatus(), router.getStatus())
                 || !Objects.equals(existing.getIsDeleted(), router.getIsDeleted());
+    }
+
+    private void removeRetiredRouter(Long id) {
+        if (getById(id) == null) {
+            return;
+        }
+        routerRoleMapper.deleteBatchIdsByRouterIds(List.of(id));
+        removeById(id);
     }
 
     private void ensureAdminUserRole() {

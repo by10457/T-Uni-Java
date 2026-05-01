@@ -1060,13 +1060,19 @@ INSERT INTO `sys_permission`
 VALUES (1920809741383991300, 1920809741383991297, 'user:add', '添加用户', '/api/user', 'POST', '2025-05-09 19:55:04',
         '2025-05-09 19:55:04', NULL, NULL, 0);
 INSERT INTO `sys_permission`
-VALUES (1920809741383991301, 1920809741383991297, 'user:query', '已登录用户', '/api/user/getCacheUserPage/*/*', 'GET',
+VALUES (1920809741383991301, 1920809741383991297, 'user:query', '已登录用户', '/api/user/users/logged-in/*/*', 'GET',
         '2025-05-09 19:55:04', '2025-05-09 19:55:04', NULL, NULL, 0);
 INSERT INTO `sys_permission`
 VALUES (1920809741383991302, 1920809741383991297, 'user:update', '更新用户', '/api/user', 'PUT', '2025-05-09 19:55:04',
         '2025-05-09 19:55:04', NULL, NULL, 0);
 INSERT INTO `sys_permission`
-VALUES (1920809741383991303, 1920809741383991297, 'user:update', '强制退出用户', '/api/user/forcedOffline', 'PUT',
+VALUES (1920809741383991303, 1920809741383991297, 'user:update', '强制退出用户', '/api/user/*/force-logout', 'PUT',
+        '2025-05-09 19:55:04', '2025-05-09 19:55:04', NULL, NULL, 0);
+INSERT INTO `sys_permission`
+VALUES (1920809741383991310, 0, 'monitor:*', '系统监控', '/api/monitor', NULL, '2025-05-09 19:55:04',
+        '2025-05-09 19:55:04', NULL, NULL, 0);
+INSERT INTO `sys_permission`
+VALUES (1920809741383991311, 1920809741383991310, 'monitor:server:query', '服务监控', '/api/monitor/server', 'GET',
         '2025-05-09 19:55:04', '2025-05-09 19:55:04', NULL, NULL, 0);
 INSERT INTO `sys_permission`
 VALUES (1920809741514014723, 0, 'admin:actuator', 'actuator端点访问', NULL, NULL, '2025-05-09 19:55:04',
@@ -1134,9 +1140,6 @@ INSERT INTO `sys_role`
 VALUES (1916789229422989313, 'page::extend', '外部页面', '2025-04-28 17:38:59', '2025-04-28 17:38:59', 1, 1, 0);
 INSERT INTO `sys_role`
 VALUES (1916789229485903877, 'page::monitor::server', '服务监控', '2025-04-28 17:38:59', '2025-04-28 17:38:59', 1, 1,
-        0);
-INSERT INTO `sys_role`
-VALUES (1916789229485903878, 'page::monitor::caches', '系统缓存', '2025-04-28 17:38:59', '2025-04-28 17:38:59', 1, 1,
         0);
 INSERT INTO `sys_role`
 VALUES (1916789229485903879, 'page::scheduler::schedulers', '调度任务', '2025-04-28 17:38:59', '2025-04-28 17:38:59', 1,
@@ -1279,11 +1282,11 @@ VALUES (1843932804747603970, 1, '/system/files', 'FileManger', '/system/files/in
         1, 1, '2025-04-30 17:11:39', '2024-10-10 00:33:34', 0);
 INSERT INTO `sys_router`
 VALUES (1844644093987880962, 0, '/monitor', 'Monitor', '', NULL, 0,
-        '{\"auths\":[],\"fixedTag\":false,\"icon\":\"carbon:cloud-monitoring\",\"keepAlive\":false,\"rank\":3,\"roles\":[],\"showLink\":true,\"showParent\":true,\"title\":\"monitor\",\"transition\":{\"enterTransition\":\"\",\"leaveTransition\":\"\"}}',
+        '{\"auths\":[],\"icon\":\"carbon:cloud-monitoring\",\"order\":9998,\"rank\":9998,\"title\":\"monitor.title\",\"vben\":true}',
         1, 1, '2025-04-26 09:30:47', '2024-10-11 23:39:58', 0);
 INSERT INTO `sys_router`
 VALUES (1844644779039358978, 1844644093987880962, '/monitor/server', 'MonitorServer', '/monitor/server/index', NULL, 0,
-        '{\"auths\":[],\"fixedTag\":false,\"icon\":\"mingcute:server-fill\",\"keepAlive\":false,\"rank\":3,\"roles\":[],\"showLink\":true,\"showParent\":true,\"title\":\"monitoring_server\",\"transition\":{\"enterTransition\":\"\",\"leaveTransition\":\"\"}}',
+        '{\"authCode\":\"Monitor:Server:List\",\"auths\":[\"Monitor:Server:List\"],\"icon\":\"mingcute:server-fill\",\"order\":1,\"rank\":1,\"title\":\"monitor.server.title\",\"vben\":true}',
         1, 1, '2025-04-26 09:30:52', '2024-10-11 23:42:42', 0);
 INSERT INTO `sys_router`
 VALUES (1844956874037469185, 1841796585525985281, '/iframe/embedded-doc', 'embedded_doc', '', NULL, 0,
@@ -1328,10 +1331,6 @@ VALUES (1847291834822123521, 1852321196101464065, '/log/user-login-log', 'UserLo
         '{\"auths\":[],\"fixedTag\":false,\"icon\":\"ph:clock-user\",\"keepAlive\":false,\"rank\":7,\"roles\":[],\"showLink\":true,\"showParent\":true,\"title\":\"userLoginLog\",\"transition\":{\"enterTransition\":\"animate__fadeIn\",\"leaveTransition\":\"animate__tada\"}}',
         1, 1, '2025-04-26 09:36:51', '2024-10-18 23:01:09', 0);
 INSERT INTO `sys_router`
-VALUES (1848989760243838978, 1844644093987880962, '/monitor/caches', 'SystemCaches', '/monitor/caches/index', NULL, 0,
-        '{\"auths\":[],\"fixedTag\":false,\"icon\":\"devicon:redis\",\"keepAlive\":false,\"rank\":4,\"roles\":[],\"showLink\":true,\"showParent\":true,\"title\":\"systemCaches\",\"transition\":{\"enterTransition\":\"\",\"leaveTransition\":\"\"}}',
-        1, 1, '2025-04-26 09:30:59', '2024-10-23 15:28:06', 0);
-INSERT INTO `sys_router`
 VALUES (1851488898978103297, 0, '/message', 'MessageManger', '', NULL, 0,
         '{\"auths\":[],\"fixedTag\":false,\"icon\":\"line-md:email-filled\",\"keepAlive\":false,\"rank\":7,\"roles\":[],\"showLink\":true,\"showParent\":true,\"title\":\"messageManagement\",\"transition\":{\"enterTransition\":\"\",\"leaveTransition\":\"\"}}',
         1849444494908125181, 1, '2025-04-26 09:36:56', '2024-10-30 12:58:47', 0);
@@ -1365,8 +1364,8 @@ VALUES (1853083388413304834, 1851488898978103297, '/message/message-send', 'Mess
         1, 1, '2025-04-26 09:37:05', '2024-11-03 22:34:43', 0);
 INSERT INTO `sys_router`
 VALUES (1918937765434429441, 1844644093987880962, '/monitor/logged-in', 'MonitorLoggedIn',
-        '/monitor/logged-in/index.vue', '', 0,
-        '{\"activePath\":\"\",\"auths\":[],\"fixedTag\":false,\"frameLoading\":true,\"frameSrc\":\"\",\"hiddenTag\":false,\"icon\":\"material-symbols:login\",\"keepAlive\":false,\"rank\":5,\"roles\":[],\"showLink\":true,\"showParent\":true,\"title\":\"logged_in_user\",\"transition\":{\"enterTransition\":\"\",\"leaveTransition\":\"\"}}',
+        '/monitor/logged-in/index', NULL, 0,
+        '{\"authCode\":\"Monitor:LoggedIn:List\",\"auths\":[\"Monitor:LoggedIn:List\"],\"icon\":\"material-symbols:login\",\"order\":2,\"rank\":2,\"title\":\"monitor.loggedIn.title\",\"vben\":true}',
         1, 1, '2025-05-04 19:34:26', '2025-05-04 15:56:30', 0);
 
 ALTER TABLE `sys_router`

@@ -51,4 +51,26 @@ public class RedisService {
         return keys;
     }
 
+    /**
+     * 统计Redis中已登录用户key数量
+     *
+     * @return 已登录用户key数量
+     */
+    public long countUserLoginKeys() {
+        String prefix = redisKeyNamespace.applyPattern(RedisUserConstant.getUserLoginInfoPrefix("*"));
+        ScanOptions scanOptions = ScanOptions.scanOptions()
+                .match(prefix)
+                .count(1000)
+                .build();
+
+        long count = 0;
+        try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
+            while (cursor.hasNext()) {
+                cursor.next();
+                count++;
+            }
+        }
+        return count;
+    }
+
 }
