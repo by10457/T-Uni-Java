@@ -11,6 +11,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.Result;
 import t.uni.common.core.result.ResultCodeEnum;
@@ -168,6 +169,12 @@ public class GlobalExceptionHandler {
     public Result<Object> handleNoHandlerFoundException(NoHandlerFoundException e) {
         log.warn("接口不存在: {}", e.getRequestURL());
         return Result.error(null, ResultCodeEnum.DATA_NOT_EXIST.getCode(), "接口不存在");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public Result<Object> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.warn("静态资源不存在: {}", e.getResourcePath());
+        return Result.error(null, ResultCodeEnum.DATA_NOT_EXIST.getCode(), "资源不存在");
     }
 
     /**

@@ -42,6 +42,9 @@ public class Router extends BaseEntity {
     @Schema(name = "meta", title = "路由meta")
     private String meta;
 
+    @Schema(name = "status", title = "状态", description = "1:禁用 0:正常")
+    private Boolean status;
+
     @Schema(name = "isDeleted", title = "是否被删除")
     private Boolean isDeleted;
 

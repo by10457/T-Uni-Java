@@ -121,11 +121,6 @@ public class Knife4jConfig {
     }
 
     @Bean
-    public GroupedOpenApi i18n() {
-        return GroupedOpenApi.builder().group("多语言").pathsToMatch("/api/i18n/**", "/api/i18nType/**").build();
-    }
-
-    @Bean
     public GroupedOpenApi config() {
         return GroupedOpenApi.builder().group("配置")
                 .pathsToMatch("/api/config/**", "/api/emailTemplate/**", "/api/emailUsers/**",

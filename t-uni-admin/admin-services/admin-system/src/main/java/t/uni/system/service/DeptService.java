@@ -8,6 +8,7 @@ import t.uni.domain.system.entity.Dept;
 import t.uni.domain.system.vo.DeptVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -24,6 +25,17 @@ public interface DeptService extends IService<Dept> {
      * @return 部门返回列表
      */
     PageResult<DeptVo> getDeptPage(Page<Dept> pageParams, DeptDto dto);
+
+    /**
+     * 管理端部门树。
+     */
+    List<Map<String, Object>> adminPortalDeptList();
+
+    void createAdminPortalDept(Map<String, Object> request);
+
+    void updateAdminPortalDept(String id, Map<String, Object> request);
+
+    void deleteAdminPortalDept(String id);
 
     /**
      * * 添加部门

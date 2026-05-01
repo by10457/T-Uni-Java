@@ -10,6 +10,7 @@ import t.uni.domain.system.entity.Role;
 import t.uni.domain.system.vo.RoleVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -26,6 +27,17 @@ public interface RoleService extends IService<Role> {
      * @return 角色返回列表
      */
     PageResult<RoleVo> getRolePage(Page<Role> pageParams, RoleDto dto);
+
+    /**
+     * 管理端角色分页列表。
+     */
+    Map<String, Object> adminPortalRoleList(long page, long pageSize, Map<String, Object> query);
+
+    void createAdminPortalRole(Map<String, Object> request);
+
+    void updateAdminPortalRole(String id, Map<String, Object> request);
+
+    void deleteAdminPortalRole(String id);
 
     /**
      * * 添加角色

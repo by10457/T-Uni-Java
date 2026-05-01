@@ -34,6 +34,9 @@ public class Dept extends BaseEntity {
     @Schema(name = "summary", title = "部门简介")
     private String summary;
 
+    @Schema(name = "status", title = "状态", description = "1:禁用 0:正常")
+    private Boolean status;
+
     @Schema(name = "isDeleted", title = "是否被删除")
     @TableField(exist = false)
     private Boolean isDeleted;

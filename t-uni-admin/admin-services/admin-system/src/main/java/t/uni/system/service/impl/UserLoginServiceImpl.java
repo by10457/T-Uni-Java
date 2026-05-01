@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.servlet.http.HttpServletRequest;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
@@ -13,6 +14,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import t.uni.common.config.jwt.JwtTokenUtil;
@@ -45,7 +47,11 @@ import t.uni.system.mapper.UserLoginLogMapper;
 import t.uni.system.mapper.UserMapper;
 import t.uni.system.service.UserLoginService;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 public class UserLoginServiceImpl extends ServiceImpl<UserMapper, AdminUser> implements UserLoginService {
@@ -73,6 +79,12 @@ public class UserLoginServiceImpl extends ServiceImpl<UserMapper, AdminUser> imp
 
     @Resource
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Value("${dromara.local-plus.domain:/api/local-file}")
+    private String localFileDomain;
+
+    @Value("${dromara.local-plus.storage-path:/tmp/t-uni-admin/}")
+    private String localStoragePath;
 
     /**
      * 前台用户登录接口
@@ -136,6 +148,57 @@ public class UserLoginServiceImpl extends ServiceImpl<UserMapper, AdminUser> imp
         setUserLoginLog(user, loginVo.getToken(), UserConstant.LOGIN);
 
         return loginVo;
+    }
+
+    @Override
+    public Map<String, Object> adminPortalLogin(Map<String, Object> request) {
+        String username = toStringValue(request, "username");
+        String password = toStringValue(request, "password");
+        if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
+            throw new BaseException(ResultCodeEnum.LOGIN_ERROR_USERNAME_PASSWORD_NOT_EMPTY);
+        }
+
+        LoginDto loginDto = new LoginDto();
+        loginDto.setUsername(username);
+        loginDto.setPassword(password);
+        loginDto.setType("default");
+        loginDto.setReadMeDay(1L);
+
+        LoginVo loginVo;
+        try {
+            loginVo = login(loginDto);
+        } catch (UsernameNotFoundException exception) {
+            throw toLoginBusinessException(exception);
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("accessToken", loginVo.getToken());
+        data.put("refreshToken", loginVo.getRefreshToken());
+        data.put("expires", loginVo.getExpires());
+        return data;
+    }
+
+    @Override
+    public Map<String, Object> adminPortalRefresh() {
+        LoginVo loginVo = BaseContext.getLoginVo();
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("accessToken", loginVo.getToken());
+        data.put("refreshToken", loginVo.getRefreshToken());
+        return data;
+    }
+
+    @Override
+    public Map<String, Object> adminPortalUserInfo() {
+        LoginVo loginVo = BaseContext.getLoginVo();
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("userId", BaseContext.getUserId() == null ? null : BaseContext.getUserId().toString());
+        data.put("username", loginVo.getUsername());
+        data.put("realName", StringUtils.hasText(loginVo.getNickname()) ? loginVo.getNickname() : loginVo.getUsername());
+        data.put("avatar", normalizeAvatar(loginVo.getAvatar()));
+        data.put("roles", loginVo.getRoles());
+        data.put("desc", loginVo.getPersonDescription());
+        data.put("homePath", "/analytics");
+        return data;
     }
 
     /**
@@ -327,5 +390,75 @@ public class UserLoginServiceImpl extends ServiceImpl<UserMapper, AdminUser> imp
         }
 
         userLoginLogMapper.insert(userLoginLog);
+    }
+
+    private String toStringValue(Map<String, Object> request, String key) {
+        if (request == null) {
+            return null;
+        }
+        Object value = request.get(key);
+        return value == null ? null : value.toString();
+    }
+
+    private BaseException toLoginBusinessException(UsernameNotFoundException exception) {
+        String message = exception.getMessage();
+        if (ResultCodeEnum.USER_IS_EMPTY.getMessage().equals(message)) {
+            return new BaseException(ResultCodeEnum.USER_IS_EMPTY);
+        }
+        if (ResultCodeEnum.FAIL_NO_ACCESS_DENIED_USER_LOCKED.getMessage().equals(message)) {
+            return new BaseException(ResultCodeEnum.FAIL_NO_ACCESS_DENIED_USER_LOCKED);
+        }
+        return new BaseException(ResultCodeEnum.LOGIN_ERROR);
+    }
+
+    private String normalizeAvatar(String avatar) {
+        if (!StringUtils.hasText(avatar)) {
+            return null;
+        }
+
+        String value = avatar.trim();
+        if (value.startsWith("http://")
+                || value.startsWith("https://")
+                || value.startsWith("data:")
+                || value.startsWith("blob:")
+                || value.startsWith("svg:")) {
+            return value;
+        }
+
+        String normalizedPath = value.startsWith("/") ? value : "/" + value;
+        String normalizedDomain = normalizePathPrefix(localFileDomain);
+        String localFilePrefix = normalizedDomain + "/";
+        if (normalizedPath.startsWith(localFilePrefix)) {
+            String relativePath = normalizedPath.substring(localFilePrefix.length());
+            return isExistingLocalFile(relativePath) ? normalizedPath : null;
+        }
+
+        if (normalizedPath.startsWith("/avatar/")) {
+            String relativePath = normalizedPath.substring(1);
+            return isExistingLocalFile(relativePath) ? normalizedDomain + normalizedPath : null;
+        }
+
+        return null;
+    }
+
+    private String normalizePathPrefix(String pathPrefix) {
+        String prefix = StringUtils.hasText(pathPrefix) ? pathPrefix.trim() : "/api/local-file";
+        if (!prefix.startsWith("/")) {
+            prefix = "/" + prefix;
+        }
+        while (prefix.endsWith("/") && prefix.length() > 1) {
+            prefix = prefix.substring(0, prefix.length() - 1);
+        }
+        return prefix;
+    }
+
+    private boolean isExistingLocalFile(String relativePath) {
+        if (!StringUtils.hasText(relativePath)) {
+            return false;
+        }
+
+        Path storageRoot = Path.of(localStoragePath).toAbsolutePath().normalize();
+        Path filePath = storageRoot.resolve(relativePath).normalize();
+        return filePath.startsWith(storageRoot) && Files.isRegularFile(filePath);
     }
 }

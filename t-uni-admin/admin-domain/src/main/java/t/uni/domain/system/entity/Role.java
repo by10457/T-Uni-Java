@@ -21,6 +21,9 @@ public class Role extends BaseEntity {
     @Schema(name = "description", title = "描述")
     private String description;
 
+    @Schema(name = "status", title = "状态", description = "1:禁用 0:正常")
+    private Boolean status;
+
     @Schema(name = "isDeleted", title = "是否被删除")
     @TableField(exist = false)
     private Boolean isDeleted;

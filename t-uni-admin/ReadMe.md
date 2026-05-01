@@ -1,306 +1,328 @@
-# BunnyAuth动态权限控制简介
+# T-Uni Admin 后台管理服务
 
-![GitHub Stars](https://img.shields.io/github/stars/BunnyMaster/bunny-admin-server?style=social)![GitHub forks](https://img.shields.io/github/forks/BunnyMaster/bunny-admin-server)![GitHub contributors](https://img.shields.io/github/contributors/BunnyMaster/bunny-admin-server)<img alt="GitHub License" src="https://img.shields.io/github/license/BunnyMaster/bunny-admin-server">![GitHub top language](https://img.shields.io/github/languages/top/BunnyMaster/bunny-admin-server)![GitHub Repo Size](https://img.shields.io/github/repo-size/BunnyMaster/bunny-admin-server)
+`t-uni-admin` 是 T-Uni 项目的后台管理端服务，负责为管理后台提供登录认证、用户管理、角色管理、权限管理、部门关联、菜单管理、动态路由、文件管理、消息通知、定时任务等后端能力。
 
-> [!IMPORTANT]
->
-> 开源权限模板[Pure-admin](https://pure-admin.github.io/vue-pure-admin/)
->
-> **Pure-admin文档**：https://pure-admin.github.io/pure-admin-doc
->
-> **默认凭证**
->
-> 项目中有一个默认管理员，数据库中用户`id`是`1`：
->
-> 用户名：`Administrator`
->
-> 密码：`admin123`
+当前管理端前端基于 `vue-vben-admin` 进行二次开发：在保留 Vben 管理后台基础布局、组件体系、权限接入方式和前端多语言配置能力的基础上，精简模板项目，去除不需要的演示和通用能力，并对接本 Java 后端，形成一套可落库、可动态配置、可按角色授权的管理系统。
 
-> [!WARNING]
->
-> 如果刚初始化登录的时候，发现管理员【`Administrator`】密码错误。
->
-> 找到数据库`sys_user`，将`Administrator`替换成下面的密码。
->
-> `$2a$10$h5BUwmMaVcEuu7Bz0TPPy.PQV8JP6CFJlbHTgT78G1s0YPIu2kfXe`
+> 本目录是后端管理端模块。对应前端项目为 `T-vben-admin`，后端启动服务为 `admin-api`。
 
-可粗可细的权限控制，多平台文件上传。
+## 项目定位
 
-## 📽️视频说明地址
+这个项目不是原始模板的简单复制，而是在模板基础上做了面向实际业务的二次开发：
 
-**介绍视频视频**
+- 精简前端模板项目，保留后台管理真正需要的基础能力。
+- 对接 Spring Boot 后端接口，替换模板中的静态数据和 Mock 数据。
+- 基于 RBAC 权限模型实现用户、角色、权限、部门、菜单的完整管理链路。
+- 支持菜单动态路由，前端菜单由后端返回并按当前用户权限过滤。
+- 支持按钮/接口权限码，便于在页面、接口和角色之间建立统一授权关系。
+- 保留文件上传、消息通知、登录日志、定时任务等后台常用能力。
+- 前端多语言由 `vue-vben-admin` 语言包维护，后端不再提供多语言配置表和接口。
 
-- [RBAC中URL的权限数据库、后端设计](https://www.bilibili.com/video/BV1nGVazrEKf/)
-- [bunny-admin 配置说明](https://www.bilibili.com/video/BV177VazMEiM/)
-- [Bunny-Admin 用户相关操作](https://www.bilibili.com/video/BV1B7VazME72/)
-- [Bunny-Admin 角色权限](https://www.bilibili.com/video/BV1ELVazzEnC/)
-- [Bunny-Admin 剩下的业务逻辑](https://www.bilibili.com/video/BV1ELVazzE7S/)
-- [代码生成器](https://www.bilibili.com/video/BV1d4Lxz9E3j/?vd_source=d42b5b664efb958be39eef8ee1196a7e)
+## 默认账号
 
-**Github地址**
+初始化数据库后，默认管理员账号为：
 
-- 权限后端：https://github.com/BunnyMaster/bunny-admin-server
-- 权限前端：https://github.com/BunnyMaster/bunny-admin-web
-- 代码生成器端：https://github.com/BunnyMaster/generator-code-server
-
-**Gitee地址**
-
-- 权限后端：https://gitee.com/BunnyBoss/bunny-admin-server
-- 权限前端：https://gitee.com/BunnyBoss/bunny-admin-web
-- 代码生成器端：https://gitee.com/BunnyBoss/generator-code-server
-
-## 🚀 项目简介
-
-一个基于 Spring Security 6 的现代化动态权限控制系统，提供完整的 RBAC 权限管理解决方案。支持前后端分离架构，可灵活配置细粒度权限控制。
-
-## 🔌 本项目端口
-
-- 管理端（admin-api）：7840
-- 小程序端（server-api）：7850
-
-## 😋控制器上注解说明
-
-整个项目是基于URL，方便定义权限接口，即使项目中接口不存在，通过URL的方式增删权限。
-
-比如项目需要为`dept`分配了角色，这个角色可以访问`dept`下所有的接口，那么就可以写成`api/dept/**`，如果需要`dept`下某个接口，
-`/api/dept/aaa/bbb`，这种形式。
-
-如果针对分页查询，分页参数写在URL上的，可以这样做，`/api/dept/*/*`这样就可以做到灵活的权限控制。
-
-但是在部分场景下，接口就是我们的权限，这时如果手动一个一个添加URL很麻烦，所以使用的swagger自带的注解和`PermissionTag`
-，自定义的注解的方式，如果这时的项目需求是，为整个接口添加权限，就可以用反射的方式添加。
-
-使用放射的方式已经放在controller的目录下，看`ReadMe`文档即可。
-
-## ✨重大更新
-
-### 核心改进
-
-**v4.0.0**
-
-- **全面重构**：后端接口、实体类等重构，前端重构部分j+优化操作体验
-- **批量操作支持**：
-    - ✅菜单管理：完善属性内容
-    - ✅ 权限管理：支持 JSON/Excel 导入导出
-    - ✅ 角色管理：支持 Excel 批量更新
-    - ✅ 多语言配置：支持 JSON/Excel 更新（全量替换模式）
-
-**v4.0.1**
-
-- 文件系统支持多平台，只需要手动配置即可。
-- 有需要参考文档：https://x-file-storage.xuyanwu.cn/#/
-- 文件删除和下载等需要实现对应接口`FileRecorder `，目前以实现，对应代码和控制器都在文件夹`file`
-  下，如有需要修改可以参考【x-file-storage】文档修改。
-
-## 🧠用法提示
-
-> [!TIP]
->
-> 多语言使用提示：
->
-> 虽然直接让用户操作JSON文件有一定门槛（多数用户不熟悉JSON格式），但在多语言项目开发中，JSON格式具有独特优势：
->
-> 1. 结构化特性 - 纯文本格式便于AI解析处理
-> 2. 高效翻译流程：
-     >
-
-- 开发者只需完成中文版本
-
-> - 上传JSON文件至AI翻译工具
->    - 简单指令即可批量生成英文/繁体中文/韩语等版本
-> 3. 显著节省开发时间 - 实现"一次编写，多语言适配"的高效工作流
-
-## 🔐 权限控制体系
-
-![image-20250428225337843](./images/image-20250428225337843-1745854181492-5.png)
-
-### 访问规则配置
-
-通过 `WebSecurityConfig` 配置
-
-| 路径类型 | 示例                | 访问要求 | 配置方式               |
-|------|-------------------|------|--------------------|
-| 公开接口 | `/api/public/**`  | 无需认证 | 路径包含 `public` 关键字  |
-| 私有接口 | `/api/private/**` | 需登录  | 路径包含 `private` 关键字 |
-
-### 路径匹配策略
-
-```java
-public static String[] annotations = { ...};
-
-// 配置示例
-        http.
-
-authorizeHttpRequests(auth ->auth
-        .
-
-authorizeHttpRequests(authorize ->authorize
-        .
-
-requestMatchers(annotations).
-
-permitAll()
-);
+```text
+用户名: Administrator
+密码: admin123
+用户ID: 1
 ```
 
-### Maven工程结构
+如果初始化后提示密码错误，可以检查 `sys_user` 表中 `Administrator` 用户的密码字段，确认是否为当前 BCrypt 密文。
 
+## 端口说明
+
+| 服务 | 模块 | 默认端口 |
+| --- | --- | --- |
+| 管理端后端 | `t-uni-admin/admin-api` | `7840` |
+| 小程序/业务端后端 | `t-uni-server/server-api` | `7850` |
+
+管理端配置位于：
+
+```text
+t-uni-admin/admin-api/src/main/resources/application.yml
+t-uni-admin/admin-api/src/main/resources/application-dev.yml
+t-uni-admin/admin-api/src/main/resources/application-auth.yml
 ```
-bunny-auth/
-├── auth-system   # 系统模块
-├── core-common   # 配置和基础模块
-│   ├── exception # exception
-│   └── context   # context
-│   └── ......    # 还要很多...
-├── domain        # domain
-└─services		  # 服务和mapper
+
+## 核心功能
+
+### 认证与用户
+
+- 管理端账号密码登录。
+- JWT 登录态与刷新令牌。
+- 当前用户信息接口。
+- 用户新增、编辑、删除、分页查询。
+- 用户与部门、角色的关联。
+- 强制用户下线和登录日志查询。
+
+### RBAC 权限管理
+
+项目权限模型围绕以下实体展开：
+
+```text
+用户 User
+  -> 绑定部门 Dept
+  -> 绑定角色 Role
+  -> 角色绑定权限 Permission
+  -> 角色绑定菜单 Router
 ```
 
-## 🛠️ 应用场景
+主要能力：
 
-### 1. 纯前端控制模式
+- 用户管理：维护后台账号、状态、部门、角色等信息。
+- 角色管理：维护角色编码、角色描述、角色状态和可访问菜单。
+- 权限管理：维护接口权限、按钮权限和权限码。
+- 部门管理：维护组织部门树，并与用户建立关联。
+- 菜单管理：维护后端动态菜单和前端路由元信息。
+- 动态路由：登录后按用户角色返回可访问菜单，前端据此生成路由。
 
-前端原理详情查看Pure文档：https://pure-admin.cn/pages/RBAC/#%E5%A6%82%E4%BD%95%E9%85%8D%E7%BD%AE
+### 菜单与动态路由
 
-![image-20250428230444403](./images/image-20250428230444403-1745854157395-3.png)
+菜单数据存储在 `sys_router` 表中，后端返回给前端后由 Vben 管理端生成动态路由。
 
-- **页面控制**：
-    1. 为路由菜单分配角色
-    2. 为用户分配角色
-- **按钮控制**：
-  ```ts
-  // 前端权限码配置
-  const auth = {
-    add: ['i18nType::add'],
-    update: ['i18nType::update'],
-    delete: ['i18nType::delete'],
-  };
-  ```
+菜单主要字段包括：
 
-### 2. 纯后端控制模式
+| 字段 | 说明 |
+| --- | --- |
+| `path` | 前端路由路径 |
+| `route_name` | 路由名称 |
+| `component` | 前端组件路径 |
+| `redirect` | 重定向路径 |
+| `menu_type` | 菜单类型 |
+| `meta` | 前端路由元信息 JSON |
+| `status` | 菜单状态，`0` 正常，`1` 禁用 |
 
-- 接口级权限：分页这种就可以添加为`/api/permission/*/*`
+`meta` 中会保存图标、标题、是否缓存、是否隐藏、排序、按钮权限等前端路由所需配置。
 
-  ```java
-  @Tag(name = "系统权限")
-  @PermissionTag(permission = "permission::*")
-  @RestController
-  @RequestMapping("api/permission")
-  public class PermissionController {
-      @Operation(summary = "分页查询")
-      @PermissionTag(permission = "permission::query")
-      @GetMapping("{page}/{limit}")
-      public Result<PageResult<PermissionVo>> getPermissionPage(
-          @PathVariable Integer page,
-          @PathVariable Integer limit) {
-          // ...
-      }
-  }
-  ```
+### 文件与消息
 
-### 3. 全栈控制模式
+- 支持本地文件存储和 MinIO 配置。
+- 支持头像、普通文件上传与访问。
+- 支持系统消息、消息类型、消息接收记录。
+- 支持用户登录日志和运行日志相关管理能力。
 
-前两个结合
+### 定时任务
 
-## 🛡️ 安全配置
+管理端包含定时任务模块：
 
-### 路径匹配策略
+- 任务分组管理。
+- 任务配置管理。
+- 任务执行日志。
+- 暂停、恢复、删除、执行任务等操作。
 
-AntPath详情：https://juejin.cn/spost/7498247273660743732
+## 模块结构
 
-| 模式   | 示例              | 说明         |
-|------|-----------------|------------|
-| 精确匹配 | `/api/user`     | 完全匹配路径     |
-| 通配符  | `/api/user/*`   | 匹配单级路径     |
-| 多级通配 | `/api/user/**`  | 匹配多级路径     |
-| 方法限定 | `GET /api/user` | 匹配特定HTTP方法 |
+```text
+t-uni-admin/
+├── admin-api
+│   ├── controller          # 管理端 HTTP 接口
+│   ├── security            # Spring Security、鉴权和登录相关配置
+│   └── resources           # application 配置、Mapper 资源加载
+├── admin-common            # 管理端公共能力
+├── admin-domain            # Entity、DTO、VO、枚举等领域对象
+├── admin-services
+│   ├── admin-system        # 用户、角色、权限、部门、菜单、消息、文件等系统服务
+│   ├── admin-configuration # 系统配置、菜单图标等配置服务
+│   └── admin-schedule      # 定时任务服务
+├── build.sh                # Docker Maven 打包脚本
+├── Dockerfile              # 管理端镜像构建文件
+└── t_uni_test.sql          # 管理端初始化 SQL
+```
 
-## 🧰 技术栈
+## 技术栈
 
-### 😄前端
+| 分类 | 技术 |
+| --- | --- |
+| 基础框架 | Spring Boot 3.5.x |
+| JDK | Java 21 |
+| 安全认证 | Spring Security 6、JWT |
+| ORM | MyBatis-Plus |
+| 数据库 | MySQL |
+| 缓存 | Redis |
+| 定时任务 | Quartz |
+| 文件存储 | x-file-storage、本地存储、MinIO |
+| API 文档 | Swagger / Knife4j |
+| 工具库 | Lombok、Hutool、Fastjson2 |
 
-- Vue 3 + PureAdmin 模板
-- 自定义权限组件
-- 国际化支持
+## 本地运行
 
-### 😃后端
+### 1. 准备依赖
 
-- Spring Boot 3 + Spring Security 6
-- JDK 17
-- MySQL + Redis + MinIO
-- Swagger + Knife4j 文档
+至少需要：
 
-### 😀开发环境
+- JDK 21
+- Maven 3.9+
+- MySQL 8+
+- Redis
 
-根据不同docker 启动方式不一样
+如果使用文件对象存储，还需要准备 MinIO；默认开发配置使用本地文件存储。
+
+### 2. 初始化数据库
+
+导入管理端初始化 SQL：
+
+```text
+t-uni-admin/t_uni_test.sql
+```
+
+默认数据库名可以通过环境变量覆盖：
 
 ```bash
-# 一键启动依赖服务
-docker-compose up -d
-# 新版的docker
-docker compose up -d
+export T_UNI_ADMIN_DB_HOST=localhost
+export T_UNI_ADMIN_DB_PORT=3306
+export T_UNI_ADMIN_DB_NAME=tuni
+export T_UNI_ADMIN_DB_USERNAME=root
+export T_UNI_ADMIN_DB_PASSWORD=zxxyp
 ```
 
-## 📚 最佳实践
+### 3. 配置 Redis
 
-1. **注解规范**：
-   ```java
-   @Tag(name = "模块名称", description = "模块描述")
-   @Operation(summary = "接口摘要", tags = {"权限码"})
-   // 或者
-   @Operation(summary = "接口摘要", tags = "权限码")
-   ```
-2. **权限码设计**：
+默认 Redis 配置同样支持环境变量覆盖：
 
-    - 模块::操作 (如 `user::create`)
-    - 分层级设计 (如 `system:user:update`)
+```bash
+export T_UNI_ADMIN_REDIS_HOST=localhost
+export T_UNI_ADMIN_REDIS_PORT=6379
+export T_UNI_ADMIN_REDIS_DATABASE=8
+export T_UNI_ADMIN_REDIS_PASSWORD=zxxyp
+```
 
-3. **批量操作**：
-    - 使用 Excel/JSON 管理大量权限配置
-    - 定期备份权限配置
+### 4. 启动管理端
 
-## 🌟 项目优势
+在项目根目录执行：
 
-1. **真正的动态控制** - 无需硬编码权限逻辑
-2. **灵活的数据导入** - 支持多种文件格式
-3. **细粒度控制** - 从页面到按钮的多层级权限
-4. **现代化技术栈** - 基于最新 Spring 生态
-5. **开箱即用** - 提供完整 Docker 部署方案
+```bash
+mvn -pl t-uni-admin/admin-api -am spring-boot:run
+```
 
-## 📌 注意事项
+启动后访问：
 
-1. 多语言更新会完全替换现有配置
-2. 生产环境建议禁用 Swagger 端点
-3. 复杂权限建议使用 Excel 批量管理
+```text
+http://localhost:7840
+```
 
-## 📈 后续规划
+## 构建打包
 
-暂无
+### Maven 直接打包
 
-## 📏前后端接口规范
+在项目根目录执行：
 
-### 🌐前端示例规范
+```bash
+mvn clean package -DskipTests -Pprod -pl t-uni-admin/admin-api -am
+```
 
-| **操作** | **API 层**     | **Pinia 层**     |
-|:-------|:--------------|:----------------|
-| 查询单个   | `getUser`     | `loadUser`      |
-| 查询列表   | `getUserList` | `loadUserList`  |
-| 分页查询   | `getUserPage` | `fetchUserPage` |
-| 新增数据   | `createUser`  | `addUser`       |
-| 更新数据   | `updateUser`  | `editUser`      |
-| 删除数据   | `deleteUser`  | `removeUser`    |
+产物位置：
 
-### 🛟后端接口示例规范
+```text
+t-uni-admin/admin-api/target/t-uni-admin.jar
+```
 
-遵循Restful
+### Docker Maven 打包
 
-| **操作** | **RESTful**                 |
-|:-------|:----------------------------|
-| 查询列表   | `GET /users`                |
-| 分页查询   | `GET /users/{page}/{limit}` |
-| 查询单个   | `GET /users/{id}`           |
-| 新增     | `POST /users`               |
-| 更新     | `PUT /users/{id}`           |
-| 删除     | `DELETE /users/{id}`        |
+也可以使用 `t-uni-admin/build.sh`，脚本会通过 Maven Docker 镜像打包：
 
-![wx_alipay](./images/wx_alipay.png)
+```bash
+cd t-uni-admin
+./build.sh
+```
+
+可选环境变量：
+
+```bash
+export MAVEN_IMAGE=maven:3.9.6-eclipse-temurin-21
+export BUILD_PROFILE=prod
+export MAVEN_CACHE_DIR=/data/maven/.m2
+```
+
+## 权限设计说明
+
+### 接口权限
+
+接口权限使用 URL 和 HTTP Method 描述，例如：
+
+```text
+GET    /api/system/user/list
+POST   /api/system/user
+PUT    /api/system/user/{id}
+DELETE /api/system/user/{id}
+```
+
+对于分页或路径参数较多的接口，可以使用通配符规则：
+
+```text
+/api/dept/*/*
+/api/user/**
+```
+
+### 权限注解
+
+后端接口可以通过 `@PermissionTag` 标记权限归属，用于辅助生成和维护权限数据：
+
+```java
+@Tag(name = "用户", description = "用户信息相关接口")
+@PermissionTag(permission = "user:*")
+@RestController
+public class UserController {
+
+    @Operation(summary = "分页查询用户")
+    @PermissionTag(permission = "user:query")
+    @GetMapping("/api/user/{page}/{limit}")
+    public Result<?> getUserPageByAdmin() {
+        // ...
+    }
+}
+```
+
+### 前端按钮权限
+
+前端可以按权限码控制按钮显示，例如：
+
+```ts
+const auth = {
+  add: ['menu:add'],
+  update: ['menu:update'],
+  delete: ['menu:delete'],
+};
+```
+
+具体权限码以数据库 `sys_permission` 和前端页面约定为准。
+
+## 与 Vben 前端的关系
+
+前端项目基于 `vue-vben-admin` 二次开发，后端主要提供这些 Vben 管理端接口：
+
+| 能力 | 示例接口 |
+| --- | --- |
+| 登录 | `POST /api/auth/login` |
+| 刷新令牌 | `POST /api/auth/refresh` |
+| 当前用户 | `GET /api/user/info` |
+| 权限码 | `GET /api/auth/codes` |
+| 动态菜单 | `GET /api/menu/all` |
+| 用户管理 | `/api/system/user/**` |
+| 角色管理 | `/api/system/role/**` |
+| 部门管理 | `/api/system/dept/**` |
+| 菜单管理 | `/api/system/menu/**` |
+
+前端菜单标题、多语言文案等由前端语言包维护，后端只负责返回菜单结构、权限关系和业务数据。
+
+## 接口风格约定
+
+管理端新增接口尽量遵循 REST 风格：
+
+| 操作 | 示例 |
+| --- | --- |
+| 查询列表 | `GET /api/system/user/list` |
+| 查询详情 | `GET /api/system/user/{id}` |
+| 新增 | `POST /api/system/user` |
+| 更新 | `PUT /api/system/user/{id}` |
+| 删除 | `DELETE /api/system/user/{id}` |
+
+保留的历史接口仍按原有路径兼容，不建议无必要重命名。
+
+## 注意事项
+
+1. 生产环境请更换默认数据库密码、Redis 密码和 JWT Secret。
+2. 生产环境建议关闭或限制 Swagger / Knife4j 访问。
+3. 菜单 `meta` 与前端路由强相关，调整字段时需要同步前端解析逻辑。
+4. 权限码、角色编码和菜单路由名应保持稳定，避免影响已有授权。
+5. 前端多语言由 Vben 前端语言包处理，不再通过后端表维护。

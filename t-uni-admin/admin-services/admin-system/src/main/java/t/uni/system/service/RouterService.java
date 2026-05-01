@@ -7,6 +7,7 @@ import t.uni.domain.system.vo.router.RouterManageVo;
 import t.uni.domain.system.vo.router.WebUserRouterVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -22,6 +23,37 @@ public interface RouterService extends IService<Router> {
      * @return 路遇列表
      */
     List<WebUserRouterVo> routerAsync();
+
+    /**
+     * 获取 管理端当前用户权限码。
+     *
+     * @return 权限码列表
+     */
+    List<String> adminPortalCodes();
+
+    /**
+     * 获取 管理端动态路由。
+     *
+     * @return 动态路由树
+     */
+    List<Map<String, Object>> adminPortalAllMenus();
+
+    /**
+     * 获取 管理端菜单管理树。
+     *
+     * @return 菜单树
+     */
+    List<Map<String, Object>> adminPortalMenuList();
+
+    boolean adminPortalMenuNameExists(String name, String id);
+
+    boolean adminPortalMenuPathExists(String path, String id);
+
+    void createAdminPortalMenu(Map<String, Object> request);
+
+    void updateAdminPortalMenu(String id, Map<String, Object> request);
+
+    void deleteAdminPortalMenu(String id);
 
     /**
      * * 管理菜单列表

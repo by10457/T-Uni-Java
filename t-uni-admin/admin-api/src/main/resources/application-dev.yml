@@ -27,19 +27,19 @@ t.uni:
   master:
     host: ${T_UNI_ADMIN_DB_HOST:localhost}
     port: ${T_UNI_ADMIN_DB_PORT:3306}
-    database: ${T_UNI_ADMIN_DB_NAME:tuni_admin}
+    database: ${T_UNI_ADMIN_DB_NAME:tuni}
     username: ${T_UNI_ADMIN_DB_USERNAME:root}
-    password: ${T_UNI_ADMIN_DB_PASSWORD:change_me}
+    password: ${T_UNI_ADMIN_DB_PASSWORD:zxxyp}
 
   redis:
     host: ${T_UNI_ADMIN_REDIS_HOST:localhost}
     port: ${T_UNI_ADMIN_REDIS_PORT:6379}
-    database: ${T_UNI_ADMIN_REDIS_DATABASE:0}
-    password: ${T_UNI_ADMIN_REDIS_PASSWORD:}
+    database: ${T_UNI_ADMIN_REDIS_DATABASE:8}
+    password: ${T_UNI_ADMIN_REDIS_PASSWORD:zxxyp}
     namespace: ${T_UNI_ADMIN_REDIS_NAMESPACE:${T_UNI_REDIS_NAMESPACE:${spring.application.name}:${t.uni.master.database}}}
 
   jwt:
-    secret: ${T_UNI_ADMIN_JWT_SECRET:replace_with_a_64_byte_secret_in_real_env}
+    secret: ${T_UNI_ADMIN_JWT_SECRET:GSdmDwAdjR3QhexcGNQbKYGMMRHFZPjeGYfe47HhPSejMysFj3DfXHJZCjVhUzJkz4Fwm43UVUaY2mYCh8PHMbGybMtEkWBd53TUWK8mT4CUC8Jd6hCbAsxwB53ksvGV}
 
 dromara:
   local-plus:

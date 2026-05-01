@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -30,6 +31,7 @@ import t.uni.domain.system.entity.AdminUser;
 import t.uni.domain.system.entity.Role;
 import t.uni.domain.system.entity.UserDept;
 import t.uni.domain.system.entity.UserLoginLog;
+import t.uni.domain.system.entity.UserRole;
 import t.uni.domain.system.views.ViewUserDept;
 import t.uni.domain.system.vo.FileInfoVo;
 import t.uni.domain.system.vo.user.AdminUserVo;
@@ -42,6 +44,11 @@ import t.uni.system.service.FilesService;
 import t.uni.system.service.UserService;
 
 import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -79,6 +86,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AdminUser> implemen
 
     @Resource
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Value("${dromara.local-plus.domain:/api/local-file}")
+    private String localFileDomain;
+
+    @Value("${dromara.local-plus.storage-path:/tmp/t-uni-admin/}")
+    private String localStoragePath;
 
     /**
      * 获取用户信息
@@ -220,6 +233,58 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AdminUser> implemen
                 .pageSize(page.getSize())
                 .total(page.getTotal())
                 .build();
+    }
+
+    @Override
+    public Map<String, Object> adminPortalUserList(long page, long pageSize, Map<String, Object> query) {
+        Integer status = toInteger(query == null ? null : query.get("status"));
+        var wrapper = Wrappers.<AdminUser>lambdaQuery()
+                .eq(AdminUser::getIsDeleted, false)
+                .like(StringUtils.hasText(toStringValue(query, "username")), AdminUser::getUsername, toStringValue(query, "username"))
+                .like(StringUtils.hasText(toStringValue(query, "realName")), AdminUser::getNickname, toStringValue(query, "realName"))
+                .eq(status != null, AdminUser::getStatus, status != null && status == 0)
+                .orderByDesc(AdminUser::getCreateTime);
+
+        Page<AdminUser> userPage = page(Page.of(page, pageSize), wrapper);
+        List<Long> userIds = userPage.getRecords().stream().map(AdminUser::getId).toList();
+        Map<Long, Long> deptByUserId = getDeptByUserId(userIds);
+        Map<Long, List<String>> rolesByUserId = getRolesByUserId(userIds);
+
+        List<Map<String, Object>> items = userPage.getRecords().stream()
+                .map(user -> toAdminPortalUserMap(user, deptByUserId.get(user.getId()), rolesByUserId.get(user.getId())))
+                .toList();
+        return pageResult(items, userPage.getTotal());
+    }
+
+    @Override
+    public void createAdminPortalUser(Map<String, Object> request) {
+        AdminUser user = new AdminUser();
+        applyAdminPortalUserRequest(user, request, true);
+        save(user);
+        replaceUserDept(user.getId(), parseNullableLong(toStringValue(request, "deptId")));
+        replaceUserRoles(user.getId(), toStringList(request.get("roleIds")));
+    }
+
+    @Override
+    public void updateAdminPortalUser(String id, Map<String, Object> request) {
+        AdminUser user = getById(parseRequiredLong(id));
+        if (user == null) {
+            throw new BaseException(ResultCodeEnum.DATA_NOT_EXIST);
+        }
+        applyAdminPortalUserRequest(user, request, false);
+        updateById(user);
+        if (request.containsKey("deptId")) {
+            replaceUserDept(user.getId(), parseNullableLong(toStringValue(request, "deptId")));
+        }
+        if (request.containsKey("roleIds")) {
+            replaceUserRoles(user.getId(), toStringList(request.get("roleIds")));
+        }
+        applicationEventPublisher.publishEvent(new UpdateUserinfoByUserIdsEvent(this, List.of(user.getId())));
+    }
+
+    @Override
+    public void deleteAdminPortalUser(String id) {
+        deleteUserByAdmin(List.of(parseRequiredLong(id)));
     }
 
     /**
@@ -372,5 +437,227 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AdminUser> implemen
         // 更新用户
         adminUser.setId(userId);
         adminUser.setAvatar(fileInfoVo.getUrl());
+    }
+
+    private Map<String, Object> toAdminPortalUserMap(AdminUser user, Long deptId, List<String> roleIds) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("id", toId(user.getId()));
+        item.put("username", user.getUsername());
+        item.put("realName", user.getNickname());
+        item.put("email", user.getEmail());
+        item.put("phone", user.getPhone());
+        item.put("avatar", normalizeAvatar(user.getAvatar()));
+        item.put("deptId", deptId == null ? null : toId(deptId));
+        item.put("roleIds", roleIds == null ? List.of() : roleIds);
+        item.put("status", Boolean.TRUE.equals(user.getStatus()) ? 0 : 1);
+        item.put("remark", user.getSummary());
+        item.put("createTime", user.getCreateTime() == null ? null : user.getCreateTime().toString());
+        return item;
+    }
+
+    private void applyAdminPortalUserRequest(AdminUser user, Map<String, Object> request, boolean create) {
+        if (request == null) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR);
+        }
+        validateMaxLength(toStringValue(request, "username"), 30);
+        validateMaxLength(toStringValue(request, "realName"), 20);
+        validateMaxLength(toStringValue(request, "email"), 150);
+        validateMaxLength(toStringValue(request, "phone"), 50);
+        validateMaxLength(toStringValue(request, "remark"), 255);
+
+        if (StringUtils.hasText(toStringValue(request, "username"))) {
+            user.setUsername(toStringValue(request, "username"));
+        }
+        if (StringUtils.hasText(toStringValue(request, "realName"))) {
+            user.setNickname(toStringValue(request, "realName"));
+        }
+        if (request.containsKey("email")) {
+            user.setEmail(toStringValue(request, "email"));
+        }
+        if (request.containsKey("phone")) {
+            user.setPhone(toStringValue(request, "phone"));
+        }
+        if (request.containsKey("remark")) {
+            user.setSummary(toStringValue(request, "remark"));
+        }
+
+        Integer status = toInteger(request.get("status"));
+        if (status != null) {
+            user.setStatus(status == 0);
+        } else if (create && user.getStatus() == null) {
+            user.setStatus(false);
+        }
+
+        String password = toStringValue(request, "password");
+        if (StringUtils.hasText(password)) {
+            user.setPassword(passwordEncoder.encode(password));
+        } else if (create) {
+            user.setPassword(passwordEncoder.encode("admin123"));
+        }
+        if (create && user.getSex() == null) {
+            user.setSex((byte) 1);
+        }
+    }
+
+    private Map<Long, Long> getDeptByUserId(List<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        return userDeptMapper.selectList(Wrappers.<UserDept>lambdaQuery().in(UserDept::getUserId, userIds))
+                .stream()
+                .collect(Collectors.toMap(UserDept::getUserId, UserDept::getDeptId, (left, right) -> left));
+    }
+
+    private Map<Long, List<String>> getRolesByUserId(List<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        return userRoleMapper.selectList(Wrappers.<UserRole>lambdaQuery().in(UserRole::getUserId, userIds))
+                .stream()
+                .collect(Collectors.groupingBy(
+                        UserRole::getUserId,
+                        Collectors.mapping(userRole -> toId(userRole.getRoleId()), Collectors.toList())
+                ));
+    }
+
+    private void replaceUserDept(Long userId, Long deptId) {
+        userDeptMapper.deleteBatchIdsByUserIds(List.of(userId));
+        if (deptId == null) {
+            return;
+        }
+
+        UserDept userDept = new UserDept();
+        userDept.setUserId(userId);
+        userDept.setDeptId(deptId);
+        userDeptMapper.insert(userDept);
+    }
+
+    private void replaceUserRoles(Long userId, List<String> roleIds) {
+        userRoleMapper.deleteBatchIdsByUserIds(List.of(userId));
+        for (Long roleId : parseIdList(roleIds)) {
+            UserRole userRole = new UserRole();
+            userRole.setUserId(userId);
+            userRole.setRoleId(roleId);
+            userRoleMapper.insert(userRole);
+        }
+    }
+
+    private Map<String, Object> pageResult(List<Map<String, Object>> items, long total) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", items);
+        result.put("total", total);
+        return result;
+    }
+
+    private List<Long> parseIdList(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return ids.stream()
+                .filter(StringUtils::hasText)
+                .map(this::parseRequiredLong)
+                .distinct()
+                .toList();
+    }
+
+    private List<String> toStringList(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(Object::toString).toList();
+        }
+        return List.of();
+    }
+
+    private Long parseNullableLong(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return parseRequiredLong(value);
+    }
+
+    private Long parseRequiredLong(String value) {
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException exception) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR);
+        }
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null || !StringUtils.hasText(value.toString())) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return Integer.valueOf(value.toString());
+    }
+
+    private String toStringValue(Map<String, Object> request, String key) {
+        if (request == null) {
+            return null;
+        }
+        Object value = request.get(key);
+        return value == null ? null : value.toString();
+    }
+
+    private String toId(Long id) {
+        return id == null ? null : id.toString();
+    }
+
+    private String normalizeAvatar(String avatar) {
+        if (!StringUtils.hasText(avatar)) {
+            return null;
+        }
+
+        String value = avatar.trim();
+        if (value.startsWith("http://")
+                || value.startsWith("https://")
+                || value.startsWith("data:")
+                || value.startsWith("blob:")
+                || value.startsWith("svg:")) {
+            return value;
+        }
+
+        String normalizedPath = value.startsWith("/") ? value : "/" + value;
+        String normalizedDomain = normalizePathPrefix(localFileDomain);
+        String localFilePrefix = normalizedDomain + "/";
+        if (normalizedPath.startsWith(localFilePrefix)) {
+            String relativePath = normalizedPath.substring(localFilePrefix.length());
+            return isExistingLocalFile(relativePath) ? normalizedPath : null;
+        }
+
+        if (normalizedPath.startsWith("/avatar/")) {
+            String relativePath = normalizedPath.substring(1);
+            return isExistingLocalFile(relativePath) ? normalizedDomain + normalizedPath : null;
+        }
+
+        return null;
+    }
+
+    private String normalizePathPrefix(String pathPrefix) {
+        String prefix = StringUtils.hasText(pathPrefix) ? pathPrefix.trim() : "/api/local-file";
+        if (!prefix.startsWith("/")) {
+            prefix = "/" + prefix;
+        }
+        while (prefix.endsWith("/") && prefix.length() > 1) {
+            prefix = prefix.substring(0, prefix.length() - 1);
+        }
+        return prefix;
+    }
+
+    private boolean isExistingLocalFile(String relativePath) {
+        if (!StringUtils.hasText(relativePath)) {
+            return false;
+        }
+
+        Path storageRoot = Path.of(localStoragePath).toAbsolutePath().normalize();
+        Path filePath = storageRoot.resolve(relativePath).normalize();
+        return filePath.startsWith(storageRoot) && Files.isRegularFile(filePath);
+    }
+
+    private void validateMaxLength(String value, int maxLength) {
+        if (value != null && value.length() > maxLength) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR);
+        }
     }
 }
