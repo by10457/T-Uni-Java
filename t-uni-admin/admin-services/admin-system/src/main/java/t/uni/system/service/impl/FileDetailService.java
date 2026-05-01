@@ -74,6 +74,9 @@ public class FileDetailService extends ServiceImpl<FilesMapper, Files> implement
         LambdaUpdateWrapper<Files> updateWrapper = new LambdaUpdateWrapper<Files>().eq(fileInfo.getUrl() != null, Files::getUrl, fileInfo.getUrl())
                 .eq(fileInfo.getId() != null, Files::getId, fileInfo.getId());
         Files files = getOne(updateWrapper);
+        if (files == null) {
+            return;
+        }
         BeanUtils.copyProperties(fileInfo, files);
 
         // 保存文件filepath，对应是fileInfo的 path
@@ -98,6 +101,9 @@ public class FileDetailService extends ServiceImpl<FilesMapper, Files> implement
     public FileInfo getByUrl(String url) {
         LambdaQueryWrapper<Files> queryWrapper = Wrappers.<Files>lambdaQuery().eq(Files::getUrl, url);
         Files files = getOne(queryWrapper);
+        if (files == null) {
+            return null;
+        }
 
         FileInfo fileInfo = new FileInfo();
         BeanUtils.copyProperties(files, fileInfo);

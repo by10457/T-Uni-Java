@@ -91,8 +91,7 @@ spring:
 # 可以配置很多但只能使用一个！！！其他平台参考官方文档
 dromara:
   x-file-storage: # 文件存储配置
-    default-platform: local-plus-1 # 默认使用的存储平台
-    # default-platform: minio-1 # 默认使用的存储平台
+    default-platform: ${T_UNI_ADMIN_FILE_STORAGE_PLATFORM:local-plus-1} # 默认使用的存储平台
     thumbnail-suffix: ".min.jpg" # 缩略图后缀，例如【.min.jpg】【.png】
     local-plus:
       - platform: local-plus-1 # 存储平台标识
@@ -104,13 +103,18 @@ dromara:
         storage-path: ${dromara.local-plus.storage-path}
     minio:
       - platform: minio-1 # 存储平台标识
-        enable-storage: true  # 启用存储
+        enable-storage: ${dromara.minio.enabled:false}  # 启用存储
         end-point: ${dromara.minio.endpointUrl}
-        domain: ${dromara.minio.endpointUrl}/${dromara.minio.bucket-name}
+        domain: ${dromara.minio.domain}
         bucket-name: ${dromara.minio.bucket-name}
         access-key: ${dromara.minio.accessKey}
         secret-key: ${dromara.minio.secretKey}
         base-path: ${dromara.minio.base-path}
+
+t.uni:
+  file-storage:
+    allowed-platforms: ${T_UNI_ADMIN_FILE_STORAGE_ALLOWED_PLATFORMS:local-plus-1,minio-1}
+    allowed-extensions: ${T_UNI_ADMIN_FILE_STORAGE_ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,webp,svg,pdf,txt,md,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,mp4,mp3}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/*.xml

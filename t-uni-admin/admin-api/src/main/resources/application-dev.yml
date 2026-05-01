@@ -50,8 +50,12 @@ dromara:
     storage-path: ${T_UNI_ADMIN_LOCAL_STORAGE_PATH:/tmp/t-uni-admin/}
     base-path: "" # 基础路径
   minio:
+    enabled: ${T_UNI_ADMIN_MINIO_ENABLED:true}
     endpointUrl: ${T_UNI_ADMIN_MINIO_ENDPOINT:http://localhost:9000}
-    accessKey: ${T_UNI_ADMIN_MINIO_ACCESS_KEY:}
-    secretKey: ${T_UNI_ADMIN_MINIO_SECRET_KEY:}
+    domain: ${T_UNI_ADMIN_MINIO_DOMAIN:http://localhost:9000/tuni-admin}
+    accessKey: ${T_UNI_ADMIN_MINIO_ACCESS_KEY:tuniadmin}
+    secretKey: ${T_UNI_ADMIN_MINIO_SECRET_KEY:tuniadmin123456}
     bucket-name: ${T_UNI_ADMIN_MINIO_BUCKET:tuni-admin}
     base-path: "" # 基础路径
+    auto-create-bucket: ${T_UNI_ADMIN_MINIO_AUTO_CREATE_BUCKET:true}
+    public-read: ${T_UNI_ADMIN_MINIO_PUBLIC_READ:true}

@@ -1117,7 +1117,7 @@ VALUES (1852621694771773442, 'actuator', 'actuator端点可访问', '2025-04-28 
 INSERT INTO `sys_role`
 VALUES (1915784833780183043, 'page::system::dept', '系统部门', '2025-04-28 17:38:59', '2025-04-29 22:57:54', 1, 1, 0);
 INSERT INTO `sys_role`
-VALUES (1915784833780183044, 'page::system::files', '系统文件', '2025-04-28 17:38:59', '2025-04-28 17:38:59', 1, 1, 0);
+VALUES (1915784833780183044, 'page::system::files', '开发文件管理', '2025-04-28 17:38:59', '2025-04-28 17:38:59', 1, 1, 0);
 INSERT INTO `sys_role`
 VALUES (1915784833780183045, 'page::system::power', '系统权限', '2025-04-28 17:38:59', '2025-05-02 20:35:30', 1, 1, 0);
 INSERT INTO `sys_role`
@@ -1277,8 +1277,8 @@ VALUES (1842033245832458241, 1, '/system/dept', 'DeptManger', '/system/dept/inde
         '{\"auths\":[],\"icon\":\"grommet-icons:user-manager\",\"keepAlive\":false,\"rank\":4,\"roles\":[\"1915784833780183043\"],\"showLink\":true,\"showParent\":true,\"title\":\"dept\",\"transition\":{\"enterTransition\":\"\",\"leaveTransition\":\"\"}}',
         1, 1, '2025-04-30 17:11:29', '2024-10-04 18:45:24', 0);
 INSERT INTO `sys_router`
-VALUES (1843932804747603970, 1, '/system/files', 'FileManger', '/system/files/index', NULL, 0,
-        '{\"auths\":[],\"fixedTag\":false,\"icon\":\"line-md:file-filled\",\"keepAlive\":false,\"rank\":6,\"roles\":[\"1915784833780183044\"],\"showLink\":true,\"showParent\":true,\"title\":\"system_files\",\"transition\":{\"enterTransition\":\"\",\"leaveTransition\":\"\"}}',
+VALUES (1843932804747603970, 1, '/system/files', 'SystemFiles', '/system/files/index', NULL, 0,
+        '{\"authCode\":\"System:Files:List\",\"auths\":[\"System:Files:List\"],\"icon\":\"lucide:folder-open\",\"order\":5,\"rank\":5,\"roles\":[\"1915784833780183044\"],\"showLink\":true,\"showParent\":true,\"title\":\"system.files.title\",\"vben\":true}',
         1, 1, '2025-04-30 17:11:39', '2024-10-10 00:33:34', 0);
 INSERT INTO `sys_router`
 VALUES (1844644093987880962, 0, '/monitor', 'Monitor', '', NULL, 0,

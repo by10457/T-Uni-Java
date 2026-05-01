@@ -13,12 +13,14 @@ import org.dromara.x.file.storage.core.get.ListFilesSupportInfo;
 import org.dromara.x.file.storage.core.get.RemoteDirInfo;
 import org.dromara.x.file.storage.core.upload.UploadPretreatment;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import t.uni.common.core.exception.BaseException;
 import t.uni.common.core.result.PageResult;
@@ -36,9 +38,13 @@ import t.uni.system.mapper.FilesMapper;
 import t.uni.system.service.FilesService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -53,6 +59,12 @@ import java.util.Objects;
 public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements FilesService {
 
     private final FileStorageService fileStorageService;
+
+    @Value("${t.uni.file-storage.allowed-platforms:local-plus-1,minio-1}")
+    private String allowedPlatforms;
+
+    @Value("${t.uni.file-storage.allowed-extensions:jpg,jpeg,png,gif,webp,svg,pdf,txt,md,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,mp4,mp3}")
+    private String allowedExtensions;
 
     /**
      * 系统文件表 服务实现类
@@ -82,7 +94,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
         String preType = dto.getFilepath();
         String filepath = FileStorageConstant.getType(preType) + DateUtil.format(new Date(), "yyyy-MM-dd") + "/";
 
-        dto.getFiles().forEach(file -> fileStorageService.of(file).setPath(filepath).upload());
+        dto.getFiles().forEach(file -> buildUpload(file, filepath, dto.getPlatform(), false).upload());
     }
 
     /**
@@ -104,9 +116,11 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
         if (Objects.isNull(files)) {
             throw new BaseException(ResultCodeEnum.FILE_NOT_EXIST);
         }
+        String existingPlatform = files.getPlatform();
 
         // 更新数据
         dto.setFilepath(files.getFilepath());
+        dto.setPlatform(existingPlatform);
         BeanUtils.copyProperties(dto, files);
         updateById(files);
 
@@ -120,7 +134,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
         }
 
         // 上传文件，修改源文件
-        fileStorageService.of(file)
+        buildUpload(file, files.getFilepath(), existingPlatform, false)
                 // 设置旧文件的路径
                 .setPath(files.getFilepath())
                 // 设置旧文件的名称
@@ -145,7 +159,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
         String preType = dto.getType();
         String filepath = FileStorageConstant.getType(preType) + DateUtil.format(new Date(), "yyyy-MM-dd") + "/";
 
-        FileInfo fileInfo = fileStorageService.of(file).setPath(filepath).upload();
+        FileInfo fileInfo = buildUpload(file, filepath, dto.getPlatform(), false).upload();
 
         // 返回信息内容化
         FileInfoVo fileInfoVo = new FileInfoVo();
@@ -169,7 +183,11 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
 
         // 查询文件，并删除
         LambdaQueryWrapper<Files> wrapper = Wrappers.<Files>lambdaQuery().in(Files::getId, ids);
-        list(wrapper).forEach(files -> fileStorageService.delete(files.getUrl()));
+        List<Files> filesList = list(wrapper);
+        if (filesList.isEmpty()) throw new BaseException(ResultCodeEnum.FILE_NOT_EXIST);
+
+        filesList.forEach(files -> fileStorageService.delete(files.getUrl()));
+        removeByIds(filesList.stream().map(Files::getId).toList());
     }
 
     /**
@@ -190,7 +208,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
         // 判断文件是否存在
         if (files == null) throw new BaseException(ResultCodeEnum.FILE_NOT_EXIST);
 
-        // 从Minio获取文件
+        // 从当前文件记录对应的存储平台获取文件
         FileInfo fileInfo = new FileInfo();
         BeanUtils.copyProperties(files, fileInfo);
 
@@ -224,10 +242,9 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
 
         // 上传文件构造参数
         String filepath = type + DateUtil.format(new Date(), "yyyy-MM-dd") + "/";
-        UploadPretreatment uploadPretreatment = fileStorageService.of(file)
+        UploadPretreatment uploadPretreatment = buildUpload(file, filepath, dto.getPlatform(), true)
                 // 指定缩略图后缀，必须是 thumbnailator 支持的图片格式，默认使用全局的
                 // .setThumbnailSuffix(".jpg")
-                .setPath(filepath)
                 .thumbnail(200, 200);
 
         FileInfo fileInfo = uploadPretreatment.upload();
@@ -260,5 +277,72 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
         }
 
         return fileStorageService.listFiles().setPath(path).listFiles().getDirList();
+    }
+
+    private UploadPretreatment buildUpload(MultipartFile file, String filepath, String platform, boolean imageOnly) {
+        validateUploadFile(file, imageOnly);
+        UploadPretreatment uploadPretreatment = fileStorageService.of(file).setPath(filepath);
+        String targetPlatform = resolvePlatform(platform);
+        if (StringUtils.hasText(targetPlatform)) {
+            uploadPretreatment.setPlatform(targetPlatform);
+        }
+        return uploadPretreatment;
+    }
+
+    private String resolvePlatform(String platform) {
+        if (!StringUtils.hasText(platform)) {
+            return null;
+        }
+
+        String value = platform.trim();
+        if (!toSet(allowedPlatforms).contains(value.toLowerCase(Locale.ROOT))) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR.getCode(), "不支持的文件存储平台");
+        }
+        return value;
+    }
+
+    private void validateUploadFile(MultipartFile file, boolean imageOnly) {
+        if (file == null || file.isEmpty()) {
+            throw new BaseException(ResultCodeEnum.UPLOAD_BYTES_EMPTY);
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (!StringUtils.hasText(originalFilename)
+                || originalFilename.contains("..")
+                || originalFilename.contains("/")
+                || originalFilename.contains("\\")) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR.getCode(), "文件名不合法");
+        }
+
+        String extension = StringUtils.getFilenameExtension(originalFilename);
+        if (!StringUtils.hasText(extension)) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR.getCode(), "文件扩展名不能为空");
+        }
+
+        String normalizedExtension = extension.toLowerCase(Locale.ROOT);
+        if (!toSet(allowedExtensions).contains(normalizedExtension)) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR.getCode(), "不支持的文件类型");
+        }
+
+        String contentType = file.getContentType();
+        if (imageOnly && !isImageFile(contentType, normalizedExtension)) {
+            throw new BaseException(ResultCodeEnum.PARAM_ERROR.getCode(), "仅支持图片文件");
+        }
+    }
+
+    private boolean isImageFile(String contentType, String extension) {
+        return (StringUtils.hasText(contentType) && contentType.startsWith("image/"))
+                || Set.of("jpg", "jpeg", "png", "gif", "webp", "svg").contains(extension);
+    }
+
+    private Set<String> toSet(String value) {
+        if (!StringUtils.hasText(value)) {
+            return Set.of();
+        }
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(item -> item.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
     }
 }

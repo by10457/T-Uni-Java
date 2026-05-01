@@ -59,7 +59,7 @@ public class FilesController {
     @PutMapping()
     public Result<String> updateFiles(@Validated(ValidationGroups.Update.class) FilesCreateOrUpdateDto dto) {
         filesService.updateFiles(dto);
-        return Result.success(ResultCodeEnum.UPDATE_SUCCESS);
+        return Result.success(null, ResultCodeEnum.UPDATE_SUCCESS.getMessage());
     }
 
     @Operation(summary = "添加文件", description = "添加系统文件")
@@ -67,7 +67,7 @@ public class FilesController {
     @PostMapping()
     public Result<Object> createFiles(@Validated(ValidationGroups.Add.class) FilesCreateOrUpdateDto dto) {
         filesService.createFiles(dto);
-        return Result.success(ResultCodeEnum.CREATE_SUCCESS);
+        return Result.success(null, ResultCodeEnum.CREATE_SUCCESS.getMessage());
     }
 
     @Operation(summary = "删除文件", description = "删除系统文件")
@@ -75,7 +75,7 @@ public class FilesController {
     @DeleteMapping()
     public Result<String> deleteFiles(@RequestBody List<Long> ids) {
         filesService.deleteFiles(ids);
-        return Result.success(ResultCodeEnum.DELETE_SUCCESS);
+        return Result.success(null, ResultCodeEnum.DELETE_SUCCESS.getMessage());
     }
 
     @Operation(summary = "下载文件", description = "根据文件id下载文件")
@@ -98,13 +98,13 @@ public class FilesController {
     @PostMapping("private/file")
     public Result<FileInfoVo> upload(@Valid FileUploadDto dto) {
         FileInfoVo vo = filesService.upload(dto);
-        return Result.success(vo, ResultCodeEnum.SUCCESS_UPLOAD);
+        return Result.success(vo, ResultCodeEnum.SUCCESS_UPLOAD.getMessage());
     }
 
     @Operation(summary = "上传图片文件", description = "上传图片文件")
     @PostMapping("private/image")
     public Result<FileInfoVo> uploadImage(@Valid FileUploadDto dto) {
         FileInfoVo vo = filesService.uploadFileByThumbnail(dto);
-        return Result.success(vo, ResultCodeEnum.SUCCESS_UPLOAD);
+        return Result.success(vo, ResultCodeEnum.SUCCESS_UPLOAD.getMessage());
     }
 }

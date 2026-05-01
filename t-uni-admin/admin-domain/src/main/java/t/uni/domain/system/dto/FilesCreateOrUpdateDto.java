@@ -27,6 +27,9 @@ public class FilesCreateOrUpdateDto {
     @NotBlank(message = "存储路径不能为空", groups = {ValidationGroups.Add.class, ValidationGroups.Update.class})
     private String filepath;
 
+    @Schema(name = "platform", title = "指定的存储平台")
+    private String platform;
+
     @Schema(name = "downloadCount", title = "下载数量")
     @Min(value = 0L, message = "最小值为0", groups = {ValidationGroups.Add.class, ValidationGroups.Update.class})
     private Integer downloadCount = 0;

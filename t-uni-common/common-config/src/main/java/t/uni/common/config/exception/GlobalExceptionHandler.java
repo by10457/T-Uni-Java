@@ -1,6 +1,7 @@
 package t.uni.common.config.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
@@ -175,6 +176,11 @@ public class GlobalExceptionHandler {
     public Result<Object> handleNoResourceFoundException(NoResourceFoundException e) {
         log.warn("静态资源不存在: {}", e.getResourcePath());
         return Result.error(null, ResultCodeEnum.DATA_NOT_EXIST.getCode(), "资源不存在");
+    }
+
+    @ExceptionHandler(ClientAbortException.class)
+    public void handleClientAbortException(ClientAbortException e) {
+        log.debug("客户端提前断开连接: {}", e.getMessage());
     }
 
     /**

@@ -39,6 +39,9 @@ public class FileInfoVo extends BaseVo {
     @Schema(name = "fileSizeStr", title = "文件大小（字符串）")
     private String fileSizeStr;
 
+    @Schema(name = "platform", title = "存储平台")
+    private String platform;
+
     @Schema(name = "metadata", title = "文件元数据")
     private String metadata;
 

@@ -80,6 +80,7 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
     private static final Long ROUTE_SYSTEM_ROLE = 1841726844983701505L;
     private static final Long ROUTE_SYSTEM_USER = 1841803086252548097L;
     private static final Long ROUTE_SYSTEM_DEPT = 1842033245832458241L;
+    private static final Long ROUTE_SYSTEM_FILES = 1843932804747603970L;
     private static final Long ROUTE_DASHBOARD = 1955000000000000001L;
     private static final Long ROUTE_ANALYTICS = 1955000000000000002L;
     private static final Long ROUTE_WORKSPACE = 1955000000000000003L;
@@ -100,15 +101,18 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
     private static final Long ROUTE_SYSTEM_DEPT_CREATE = 1955000000000000231L;
     private static final Long ROUTE_SYSTEM_DEPT_EDIT = 1955000000000000232L;
     private static final Long ROUTE_SYSTEM_DEPT_DELETE = 1955000000000000233L;
+    private static final Long ROUTE_SYSTEM_FILES_UPLOAD = 1955000000000000241L;
+    private static final Long ROUTE_SYSTEM_FILES_DELETE = 1955000000000000242L;
 
     private static final Set<Long> BUILTIN_ROUTE_IDS = Set.of(
-            ROUTE_SYSTEM, ROUTE_SYSTEM_MENU, ROUTE_SYSTEM_ROLE, ROUTE_SYSTEM_USER, ROUTE_SYSTEM_DEPT,
+            ROUTE_SYSTEM, ROUTE_SYSTEM_MENU, ROUTE_SYSTEM_ROLE, ROUTE_SYSTEM_USER, ROUTE_SYSTEM_DEPT, ROUTE_SYSTEM_FILES,
             ROUTE_DASHBOARD, ROUTE_ANALYTICS, ROUTE_WORKSPACE,
             ROUTE_MONITOR, ROUTE_MONITOR_SERVER, ROUTE_MONITOR_LOGGED_IN,
             ROUTE_SYSTEM_USER_CREATE, ROUTE_SYSTEM_USER_EDIT, ROUTE_SYSTEM_USER_DELETE,
             ROUTE_SYSTEM_ROLE_CREATE, ROUTE_SYSTEM_ROLE_EDIT, ROUTE_SYSTEM_ROLE_DELETE,
             ROUTE_SYSTEM_MENU_CREATE, ROUTE_SYSTEM_MENU_EDIT, ROUTE_SYSTEM_MENU_DELETE,
-            ROUTE_SYSTEM_DEPT_CREATE, ROUTE_SYSTEM_DEPT_EDIT, ROUTE_SYSTEM_DEPT_DELETE
+            ROUTE_SYSTEM_DEPT_CREATE, ROUTE_SYSTEM_DEPT_EDIT, ROUTE_SYSTEM_DEPT_DELETE,
+            ROUTE_SYSTEM_FILES_UPLOAD, ROUTE_SYSTEM_FILES_DELETE
     );
 
     @Resource
@@ -401,6 +405,8 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
                 meta("system.menu.title", "mdi:menu", 3, "System:Menu:List"));
         upsertRouter(ROUTE_SYSTEM_DEPT, ROUTE_SYSTEM, "/system/dept", "SystemDept", "/system/dept/list", null, 0,
                 meta("system.dept.title", "charm:organisation", 4, "System:Dept:List"));
+        upsertRouter(ROUTE_SYSTEM_FILES, ROUTE_SYSTEM, "/system/files", "SystemFiles", "/system/files/index", null, 0,
+                meta("system.files.title", "lucide:folder-open", 5, "System:Files:List"));
 
         upsertRouter(ROUTE_MONITOR, 0L, "/monitor", "Monitor", null, "/monitor/server", 0,
                 meta("monitor.title", "carbon:cloud-monitoring", 9998, null));
@@ -421,6 +427,8 @@ public class RouterServiceImpl extends ServiceImpl<RouterMapper, Router> impleme
         upsertButton(ROUTE_SYSTEM_DEPT_CREATE, ROUTE_SYSTEM_DEPT, "SystemDeptCreate", "System:Dept:Create", "common.create");
         upsertButton(ROUTE_SYSTEM_DEPT_EDIT, ROUTE_SYSTEM_DEPT, "SystemDeptEdit", "System:Dept:Edit", "common.edit");
         upsertButton(ROUTE_SYSTEM_DEPT_DELETE, ROUTE_SYSTEM_DEPT, "SystemDeptDelete", "System:Dept:Delete", "common.delete");
+        upsertButton(ROUTE_SYSTEM_FILES_UPLOAD, ROUTE_SYSTEM_FILES, "SystemFilesUpload", "System:Files:Upload", "system.files.upload");
+        upsertButton(ROUTE_SYSTEM_FILES_DELETE, ROUTE_SYSTEM_FILES, "SystemFilesDelete", "System:Files:Delete", "common.delete");
 
         removeRetiredRouter(ROUTE_MONITOR_CACHE_RETIRED);
         ensureAdminUserRole();
